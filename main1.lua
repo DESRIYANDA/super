@@ -1807,6 +1807,14 @@ end)
 ClientSection:NewToggle("No Temp & Oxygen", "Disable temperature and oxygen systems", function(state)
     flags['nopeakssystems'] = state
 end)
+ClientSection:NewToggle("Skip Fish Cutscenes", "🎬 Skip all fish capture cutscenes (Boss/Legendary)", function(state)
+    flags['skipcutscenes'] = state
+    if state then
+        print("🎬 [Skip Cutscenes] Activated - All fish capture cutscenes will be skipped!")
+    else
+        print("📽️ [Skip Cutscenes] Deactivated - Normal cutscenes will play")
+    end
+end)
 
 -- Teleports Section
 local LocationSection = TeleTab:NewSection("Locations")
@@ -2199,8 +2207,70 @@ if CheckFunc(hookmetamethod) then
             args[1] = 100
             args[2] = true
             return old(self, unpack(args))
+        elseif flags['skipcutscenes'] and method == 'FireServer' then
+            -- Skip cutscene remotes for fish captures
+            local remoteName = tostring(self.Name)
+            
+            -- List of cutscene remote names to block
+            local cutsceneRemotes = {
+                "MegalodonCapture", "KrakenCapture", "ScyllaCapture", 
+                "MobyCapture", "SeaLeviathanCapture", "FrozenLeviathanCapture",
+                "CrownedAnglerCapture", "CrystallizedSeadragonCapture", 
+                "LobsterKingCapture", "MagmaLeviathanCapture", "BossArenaDoorCapture",
+                "BossArenaEndCapture", "CryptDoorIntro", "CathuluBossFightEnding",
+                "CthuluStartFight", "ScyllaEnter", "MarianasVeilEntry", "CrackedObsidianDoor"
+            }
+            
+            -- Check if remote name contains cutscene keywords
+            if remoteName:lower():find("cutscene") or remoteName:find("Capture") or remoteName:find("Intro") then
+                print("🎬 [Skip Cutscenes] Blocked cutscene remote: " .. remoteName)
+                return -- Block the cutscene call completely
+            end
+            
+            -- Check specific fish capture cutscenes
+            for _, cutscene in pairs(cutsceneRemotes) do
+                if remoteName:find(cutscene) then
+                    print("🎬 [Skip Cutscenes] Blocked " .. cutscene .. " cutscene!")
+                    return -- Block the specific cutscene
+                end
+            end
         end
         return old(self, ...)
+    end)
+    
+    -- Additional hook for cutscene GUI detection and instant closure
+    spawn(function()
+        while wait(0.1) do
+            if flags['skipcutscenes'] then
+                pcall(function()
+                    -- Check for cutscene GUIs and close them instantly
+                    for _, gui in pairs(lp.PlayerGui:GetChildren()) do
+                        local guiName = gui.Name:lower()
+                        
+                        -- Detect cutscene-related GUIs
+                        if guiName:find("cutscene") or guiName:find("capture") or 
+                           guiName:find("intro") or guiName:find("ending") then
+                            gui:Destroy()
+                            print("🎬 [Skip Cutscenes] Destroyed cutscene GUI: " .. gui.Name)
+                        end
+                        
+                        -- Check for specific boss cutscene GUIs
+                        local cutsceneGUIs = {
+                            "megalodon", "kraken", "scylla", "moby", "leviathan",
+                            "angler", "seadragon", "lobster", "cthulu", "mariana"
+                        }
+                        
+                        for _, cutsceneGUI in pairs(cutsceneGUIs) do
+                            if guiName:find(cutsceneGUI) and 
+                               (guiName:find("capture") or guiName:find("cutscene")) then
+                                gui:Destroy()
+                                print("🎬 [Skip Cutscenes] Destroyed " .. cutsceneGUI .. " cutscene GUI!")
+                            end
+                        end
+                    end
+                end)
+            end
+        end
     end)
 end
 
@@ -2360,17 +2430,19 @@ if flags then
 end
 
 --[[
-🚀 SUPER INSTANT REEL + INSTANT BOBBER MODIFICATION 🚀
+🚀 SUPER INSTANT REEL + INSTANT BOBBER + SKIP CUTSCENES MODIFICATION 🚀
 
 ✅ New Features Added:
 - Super Instant Reel toggle with maximum speed
 - Instant Bobber toggle (no animation, close drop)
+- Skip Fish Cutscenes toggle (skip all boss/legendary captures)
 - Dual monitoring system (main loop + GUI detection)
 - Conflict prevention with other auto-reel features
 - Multiple rapid fire methods for maximum effectiveness
 - Real-time status feedback with console messages
 - Enhanced GUI force-close functionality
 - Hook system for manual casting instant bobber
+- Cutscene blocking system for fish captures
 
 🎯 How Super Instant Reel works (CORRECTED):
 1. Monitors for ACTUAL fish bite (bite.Value == true) - NOT just lure %
@@ -2393,15 +2465,31 @@ end
 4. Hook system intercepts manual casts
 5. Perfect for speed fishing setup
 
-🎮 Usage Combinations:
+� How Skip Fish Cutscenes works:
+1. Blocks all cutscene remote calls for fish captures
+2. Instantly destroys cutscene GUIs when they appear  
+3. Covers all boss fish: Megalodon, Kraken, Scylla, Moby, Leviathan, etc.
+4. No interruption during legendary fish catches
+5. Maintains normal fishing experience without cutscenes
+
+📋 Boss Fish Cutscenes Covered:
+- Megalodon, Kraken, Scylla, Moby Dick
+- Sea Leviathan, Frozen Leviathan, Magma Leviathan
+- Crowned Angler, Crystallized Seadragon, Lobster King  
+- Cthulhu Boss Fight, Mariana Veil Entry, Crypt Door
+- Boss Arena captures and all legendary fish encounters
+
+�🎮 Usage Combinations:
 - AutoCast OFF + Instant Bobber OFF = Normal manual fishing
 - AutoCast ON + Instant Bobber OFF = Auto fishing with animation  
 - AutoCast ON + Instant Bobber ON = Auto fishing instant (FASTEST!)
 - AutoCast OFF + Instant Bobber ON = Manual fishing instant
+- Skip Cutscenes ON = No interruptions from boss fish captures
 
 ⚠️ Important Notes:
 - Super Instant Reel disables normal Auto Reel when activated
 - Instant Bobber works with any casting mode
+- Skip Cutscenes works for all legendary/boss fish
 - Combined features create ultimate fishing speed
 - Console output shows when features are active
 
@@ -2409,14 +2497,16 @@ end
 - GUI monitoring via PlayerGui.ChildAdded
 - Main loop checking via lure value detection
 - Hook metamethod for manual cast interception
+- Cutscene remote blocking via FireServer hook
 - Multiple FireServer calls for redundancy
 - Force GUI disable for instant completion
 --]]
 
-print("🎣 Enhanced Fisch Script with ULTIMATE Super Instant Reel + Instant Bobber loaded successfully!")
+print("🎣 Enhanced Fisch Script with ULTIMATE Super Instant Reel + Instant Bobber + Skip Cutscenes loaded successfully!")
 print("🚀 ULTIMATE Super Instant Reel: Ready for MAXIMUM fishing speed!")
-print("⚡ INFO: When Super Instant Reel is enabled, fish will be caught INSTANTLY with NO animation!")
-print("🔥 This is the FASTEST possible fishing system in Fisch!")
+print("🎬 Skip Cutscenes: No more interruptions from boss fish captures!")
+print("⚡ INFO: When features are enabled, fishing becomes completely seamless and ultra-fast!")
+print("🔥 This is the FASTEST and most UNINTERRUPTED fishing system in Fisch!")
 
 -- ULTIMATE HOOK SYSTEM - Blocks reel GUI creation entirely
 local originalInstanceNew = Instance.new
