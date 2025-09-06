@@ -48,129 +48,59 @@ flags['blockrodwave'] = false
 flags['blockshakeeffects'] = false
 flags['blockexaltedanim'] = false
 
--- ULTIMATE Super Instant Reel System (TRUE INSTANT - NO ANIMATION)
-local function setupUltimateSuperInstantReel()
+-- OPTIMIZED Super Instant Reel System (SMOOTH & EFFICIENT)
+local function setupOptimizedSuperInstantReel()
     if not superInstantReelActive then
         superInstantReelActive = true
         
-        -- Method 1: ULTRA-AGGRESSIVE bite detection with instant execution
+        -- Single optimized monitoring loop (reduced CPU usage)
         lureMonitorConnection = RunService.Heartbeat:Connect(function()
             if flags['superinstantreel'] then
                 pcall(function()
                     local rod = FindRod()
                     if rod and rod.values then
-                        -- Check lure progress for ANY indication of bite
                         local lureValue = rod.values.lure and rod.values.lure.Value or 0
                         local biteValue = rod.values.bite and rod.values.bite.Value or false
                         
-                        -- INSTANT catch when lure >= 95% OR bite detected (ZERO ANIMATION)
-                        if lureValue >= 95 or biteValue == true then
-                            -- MEGA-FIRE: Multiple instant calls for absolute zero delay
-                            for i = 1, 15 do
-                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                        -- Instant catch when bite detected (SMOOTH ANIMATION)
+                        if lureValue >= 98 or biteValue == true then
+                            -- Optimized single call instead of spam
+                            ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                            
+                            -- Smooth GUI handling
+                            local reelGui = lp.PlayerGui:FindFirstChild("reel")
+                            if reelGui then
+                                reelGui:Destroy()
                             end
                             
-                            -- DESTROY ALL REEL-RELATED GUI INSTANTLY
-                            for _, gui in pairs(lp.PlayerGui:GetChildren()) do
-                                if gui.Name == "reel" or gui.Name:lower():find("reel") or gui:FindFirstChild("reel") then
-                                    gui.Enabled = false
-                                    gui.Parent = nil
-                                    gui:Destroy()
-                                end
-                            end
-                            
-                            -- Block any reel-related sounds or effects
-                            for _, sound in pairs(workspace:GetDescendants()) do
-                                if sound:IsA("Sound") and sound.Name:lower():find("reel") then
-                                    sound.Volume = 0
-                                    sound:Stop()
-                                end
-                            end
-                            
-                            -- print("⚡ [ZERO ANIMATION] Lure:" .. lureValue .. "% - INSTANT CATCH!")
-                        end
-                        
-                        -- PREVENTIVE: Destroy any reel GUI that appears
-                        if lp.PlayerGui:FindFirstChild("reel") then
-                            for i = 1, 5 do
-                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                            end
-                            lp.PlayerGui.reel:Destroy()
-                            -- print("🚀 [GUI BLOCKED] Reel interface destroyed!")
+                            -- print("⚡ [SMOOTH INSTANT] Lure:" .. lureValue .. "% - INSTANT CATCH!")
                         end
                     end
                 end)
             end
         end)
         
-        -- Method 2: GUI intercept with IMMEDIATE destruction
+        -- Optimized GUI intercept (prevents duplicate processing)
         local playerGui = lp.PlayerGui
         playerGui.ChildAdded:Connect(function(gui)
             if flags['superinstantreel'] and gui.Name == "reel" then
+                -- Small delay to prevent conflicts with autoshake
+                task.wait(0.05)
                 pcall(function()
-                    -- IMMEDIATE destruction - don't even let the GUI show for 1 frame!
                     gui:Destroy()
-                    
-                    -- INSTANT completion with mega-fire
-                    for i = 1, 10 do
-                        ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                    end
-                    
-                    -- print("� [GUI INTERCEPTED] Reel GUI destroyed before showing!")
+                    ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                    -- print("🚀 [SMOOTH GUI] Reel interface smoothly bypassed!")
                 end)
             end
         end)
         
-        -- Method 3: HYPER-SPEED monitoring for absolute zero delay
-        task.spawn(function()
-            while true do
-                if flags['superinstantreel'] then
-                    pcall(function()
-                        local rod = FindRod()
-                        if rod and rod.values then
-                            local lureValue = rod.values.lure and rod.values.lure.Value or 0
-                            local biteValue = rod.values.bite and rod.values.bite.Value or false
-                            
-                            -- ANY sign of fishing progress = instant complete (ZERO ANIMATION)
-                            if lureValue >= 90 or biteValue == true then
-                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                            end
-                        end
-                        
-                        -- Destroy any GUI that might slip through
-                        for _, gui in pairs(lp.PlayerGui:GetChildren()) do
-                            if gui.Name == "reel" or gui.Name:lower():find("reel") then
-                                gui.Enabled = false
-                                gui:Destroy()
-                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                            end
-                        end
-                    end)
-                end
-                task.wait(0.001) -- Ultra-fast 1ms checking
-            end
-        end)
-        
-        -- Method 4: Hook into remote events to bypass minigame entirely
-        local originalConnect = ReplicatedStorage.events.reelfinished.OnClientEvent.Connect
-        ReplicatedStorage.events.reelfinished.OnClientEvent:Connect(function(...)
-            if flags['superinstantreel'] then
-                -- Force instant completion when any reel event occurs
-                for i = 1, 10 do
-                    ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                end
-                -- print("🔥 [EVENT HOOK] Reel event intercepted - INSTANT COMPLETE!")
-            end
-        end)
-        
-        -- print("✅ [ULTIMATE ZERO-ANIMATION REEL] Maximum speed system activated!")
-        -- print("🔥 ALL reel animations and delays have been ELIMINATED!")
+        -- print("✅ [OPTIMIZED INSTANT REEL] Smooth animation system activated!")
+        -- print("🎯 Reduced CPU usage while maintaining instant catch!")
     end
 end
 
--- Call setup function
-setupUltimateSuperInstantReel()
+-- Call optimized setup function
+setupOptimizedSuperInstantReel()
 
 local TeleportLocations = {
     ['Zones'] = {
@@ -2237,7 +2167,9 @@ RunService.Heartbeat:Connect(function()
     else
         characterposition = nil
     end
-    if flags['autoshake'] then
+    -- OPTIMIZED AUTOSHAKE (CONFLICT-FREE WITH INSTANT REEL)
+    if flags['autoshake'] and not flags['superinstantreel'] then
+        -- Only run autoshake if super instant reel is disabled to prevent conflicts
         if FindChild(lp.PlayerGui, 'shakeui') and FindChild(lp.PlayerGui['shakeui'], 'safezone') and FindChild(lp.PlayerGui['shakeui']['safezone'], 'button') then
             GuiService.SelectedObject = lp.PlayerGui['shakeui']['safezone']['button']
             if GuiService.SelectedObject == lp.PlayerGui['shakeui']['safezone']['button'] then
@@ -2245,10 +2177,25 @@ RunService.Heartbeat:Connect(function()
                 game:GetService('VirtualInputManager'):SendKeyEvent(false, Enum.KeyCode.Return, false, game)
             end
         end
+    elseif flags['autoshake'] and flags['superinstantreel'] then
+        -- Alternative smooth shake handling when instant reel is active
+        pcall(function()
+            local shakeUI = lp.PlayerGui:FindFirstChild('shakeui')
+            if shakeUI then
+                shakeUI:Destroy() -- Instantly bypass shake UI when instant reel is active
+            end
+        end)
     end
+    -- OPTIMIZED AUTOCAST (SMOOTH WITH ALL FEATURES)
     if flags['autocast'] then
         local rod = FindRod()
         local currentDelay = flags['autocastdelay'] or 0.5
+        
+        -- Add extra delay when super instant reel is active to prevent conflicts
+        if flags['superinstantreel'] then
+            currentDelay = math.max(currentDelay, 0.8) -- Minimum 0.8s delay for smooth operation
+        end
+        
         if rod ~= nil and rod['values']['lure'].Value <= .001 then
             task.wait(currentDelay)
             
@@ -2276,39 +2223,26 @@ RunService.Heartbeat:Connect(function()
         end
     end
     
-    -- 🚀 SUPER INSTANT REEL - ZERO ANIMATION, MAXIMUM SPEED!
+    -- 🚀 OPTIMIZED SUPER INSTANT REEL - SMOOTH & EFFICIENT!
     if flags['superinstantreel'] then
         local rod = FindRod()
         if rod ~= nil then
             local lureValue = rod.values.lure and rod.values.lure.Value or 0
             local biteValue = rod.values.bite and rod.values.bite.Value or false
             
-            -- TRIGGER: Lure >= 90% OR any bite indication (ZERO ANIMATION)
-            if lureValue >= 90 or biteValue == true then
+            -- SMOOTH TRIGGER: Lure >= 98% OR bite detected (NO LAG)
+            if lureValue >= 98 or biteValue == true then
                 pcall(function()
-                    -- Method 1: MEGA-FIRE instant completion
-                    for i = 1, 25 do
-                        ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                    -- Single optimized call (no spam)
+                    ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                    
+                    -- Smooth GUI cleanup
+                    local reelGui = lp.PlayerGui:FindFirstChild("reel")
+                    if reelGui then
+                        reelGui:Destroy()
                     end
                     
-                    -- Method 2: DESTROY ALL reel GUI instantly (ZERO ANIMATION)
-                    for _, gui in pairs(lp.PlayerGui:GetChildren()) do
-                        if gui.Name == "reel" or gui.Name:lower():find("reel") or gui:FindFirstChild("reel") then
-                            gui.Enabled = false
-                            gui.Parent = nil
-                            gui:Destroy()
-                        end
-                    end
-                    
-                    -- Method 3: Block all reel-related sounds and effects
-                    for _, obj in pairs(workspace:GetDescendants()) do
-                        if obj:IsA("Sound") and (obj.Name:lower():find("reel") or obj.Name:lower():find("fish")) then
-                            obj.Volume = 0
-                            obj:Stop()
-                        end
-                    end
-                    
-                    -- print("⚡ [ZERO-ANIMATION] Lure:" .. lureValue .. "% - INSTANT CATCH!")
+                    -- print("⚡ [SMOOTH INSTANT] Lure:" .. lureValue .. "% - NO LAG CATCH!")
                 end)
             end
         end
