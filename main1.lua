@@ -37,6 +37,7 @@ flags['autoreeldelay'] = 0.5
 
 -- Super Instant Reel Variables
 flags['superinstantreel'] = false
+flags['instantbobber'] = false
 local superInstantReelActive = false
 
 -- Super Instant Reel GUI Monitoring System
@@ -1250,6 +1251,17 @@ CastSection:NewToggle("Auto Cast", "Automatically cast fishing rod", function(st
     flags['autocast'] = state
 end)
 
+-- Instant Bobber Toggle
+CastSection:NewToggle("Instant Bobber", "🚫 No animation, bobber drops close (works with AutoCast)", function(state)
+    flags['instantbobber'] = state
+    if state then
+        print("⚡ [Instant Bobber] Activated - No casting animation!")
+        print("📍 [Instant Bobber] Bobber will drop close to player")
+    else
+        print("🎣 [Instant Bobber] Deactivated - Normal casting animation")
+    end
+end)
+
 -- Fix slider issue - properly define default value with initial state
 local castSlider = CastSection:NewSlider("Auto Cast Delay", "Delay between auto casts (seconds)", 0.1, 5, function(value)
     flags['autocastdelay'] = value
@@ -1457,7 +1469,16 @@ RunService.Heartbeat:Connect(function()
         local currentDelay = flags['autocastdelay'] or 0.5
         if rod ~= nil and rod['values']['lure'].Value <= .001 then
             task.wait(currentDelay)
-            rod.events.cast:FireServer(100, 1) -- Normal distance cast
+            
+            -- Check instant bobber setting for casting behavior
+            if flags['instantbobber'] then
+                -- INSTANT BOBBER: No animation, close drop
+                rod.events.cast:FireServer(0, 1) -- Distance 0 = instant drop near player
+                print("⚡ [Instant Bobber] Cast with no animation!")
+            else
+                -- NORMAL CAST: Full animation, far distance
+                rod.events.cast:FireServer(100, 1) -- Distance 100 = normal cast
+            end
         end
     end
     if flags['autoreel'] then
@@ -1704,6 +1725,12 @@ if CheckFunc(hookmetamethod) then
         elseif method == 'FireServer' and self.Name == 'cast' and flags['perfectcast'] then
             args[1] = 100
             return old(self, unpack(args))
+        elseif method == 'FireServer' and self.Name == 'cast' and flags['instantbobber'] then
+            -- INSTANT BOBBER HOOK: Override manual casting untuk instant drop
+            args[1] = 0  -- Distance 0 untuk instant bobber
+            args[2] = 1  -- Keep power at 1
+            print("⚡ [Instant Bobber Hook] Manual cast converted to instant!")
+            return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'reelfinished' and flags['alwayscatch'] then
             args[1] = 100
             args[2] = true
@@ -1758,36 +1785,53 @@ if flags then
 end
 
 --[[
-🚀 SUPER INSTANT REEL MODIFICATION ADDED 🚀
+🚀 SUPER INSTANT REEL + INSTANT BOBBER MODIFICATION 🚀
 
 ✅ New Features Added:
 - Super Instant Reel toggle with maximum speed
+- Instant Bobber toggle (no animation, close drop)
 - Dual monitoring system (main loop + GUI detection)
 - Conflict prevention with other auto-reel features
 - Multiple rapid fire methods for maximum effectiveness
 - Real-time status feedback with console messages
 - Enhanced GUI force-close functionality
+- Hook system for manual casting instant bobber
 
-🎯 How it works:
+🎯 How Super Instant Reel works:
 1. Monitors for fish bite (lure value >= 99.9)
 2. Instantly fires reelfinished event with perfect score
 3. Force disables reel GUI to prevent delays
 4. Uses multiple rapid calls for maximum success rate
 5. No delays or waiting - pure speed!
 
+⚡ How Instant Bobber works:
+1. Works with both AutoCast and Manual casting
+2. Changes cast distance from 100 to 0 (no animation)
+3. Bobber drops instantly near player
+4. Hook system intercepts manual casts
+5. Perfect for speed fishing setup
+
+🎮 Usage Combinations:
+- AutoCast OFF + Instant Bobber OFF = Normal manual fishing
+- AutoCast ON + Instant Bobber OFF = Auto fishing with animation  
+- AutoCast ON + Instant Bobber ON = Auto fishing instant (FASTEST!)
+- AutoCast OFF + Instant Bobber ON = Manual fishing instant
+
 ⚠️ Important Notes:
 - Super Instant Reel disables normal Auto Reel when activated
-- Also disables Always Catch to prevent conflicts
-- Multiple detection methods ensure maximum catch rate
-- Console output shows when fish are caught instantly
+- Instant Bobber works with any casting mode
+- Combined features create ultimate fishing speed
+- Console output shows when features are active
 
 🔧 Technical Implementation:
 - GUI monitoring via PlayerGui.ChildAdded
 - Main loop checking via lure value detection
+- Hook metamethod for manual cast interception
 - Multiple FireServer calls for redundancy
 - Force GUI disable for instant completion
 --]]
 
-print("🎣 Enhanced Fisch Script with Super Instant Reel loaded successfully!")
+print("🎣 Enhanced Fisch Script with Super Instant Reel + Instant Bobber loaded successfully!")
 print("🚀 Super Instant Reel: Ready for maximum fishing speed!")
-print("⚡ Toggle 'Super Instant Reel' in Auto Reel Settings for INSTANT catches!")
+print("⚡ Instant Bobber: Ready for no-animation casting!")
+print("🎮 Toggle both features in Auto Cast/Reel Settings for ULTIMATE SPEED!")
