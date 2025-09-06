@@ -1302,6 +1302,18 @@ EventSystem.espObjects = {}
 EventSystem.activeEvents = {}
 EventSystem.isScanning = false
 
+-- ESP Color System (same as Player ESP)
+EventSystem.colors = {
+    ["Red"] = Color3.fromRGB(255, 0, 0),
+    ["Green"] = Color3.fromRGB(0, 255, 0),
+    ["Blue"] = Color3.fromRGB(0, 100, 255),
+    ["Yellow"] = Color3.fromRGB(255, 255, 0),
+    ["Purple"] = Color3.fromRGB(128, 0, 128),
+    ["Orange"] = Color3.fromRGB(255, 165, 0),
+    ["White"] = Color3.fromRGB(255, 255, 255),
+    ["Cyan"] = Color3.fromRGB(0, 255, 255)
+}
+
 -- Event Data dengan koordinat zone dan warna
 local EVENTS_DATA = {
     -- Water Events
@@ -1375,19 +1387,23 @@ function EventSystem:createESPText(eventName, position, distance)
     espObj.screenGui.Parent = lp.PlayerGui
     espObj.screenGui.ResetOnSpawn = false
     
-    -- Create Frame sebagai container (invisible)
+    -- Create Frame sebagai container (completely invisible)
     espObj.frame = Instance.new("Frame")
-    espObj.frame.Size = UDim2.new(0, 150, 0, 40)
+    espObj.frame.Size = UDim2.new(0, 120, 0, 30)  -- Smaller size like Player ESP
     espObj.frame.BackgroundTransparency = 1  -- Completely transparent
     espObj.frame.BorderSizePixel = 0  -- No border
     espObj.frame.Parent = espObj.screenGui
     
-    -- Create TextLabel (floating text only)
+    -- Create TextLabel (floating text only, same style as Player ESP)
     espObj.textLabel = Instance.new("TextLabel")
     espObj.textLabel.Size = UDim2.new(1, 0, 1, 0)
     espObj.textLabel.BackgroundTransparency = 1  -- No background
     espObj.textLabel.Text = "🎯 " .. eventName .. "\n📍 " .. distance .. "m"
-    espObj.textLabel.TextColor3 = EVENTS_DATA[eventName].color  -- Use event color for text
+    
+    -- Use selected color or default white
+    local selectedColor = self.colors[flags['eventespcolor'] or "White"]
+    espObj.textLabel.TextColor3 = selectedColor
+    
     espObj.textLabel.TextStrokeTransparency = 0
     espObj.textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)  -- Black outline for visibility
     espObj.textLabel.TextScaled = true
@@ -1407,17 +1423,17 @@ function EventSystem:createESPText(eventName, position, distance)
             local screenPos, onScreen = camera:WorldToScreenPoint(worldPos)
             
             if onScreen and screenPos.Z > 0 then
-                -- Position on screen
-                espObj.frame.Position = UDim2.new(0, screenPos.X - 75, 0, screenPos.Y - 20)
+                -- Position on screen (same as Player ESP positioning)
+                espObj.frame.Position = UDim2.new(0, screenPos.X - 60, 0, screenPos.Y - 15)
                 espObj.frame.Visible = true
                 
                 -- Update distance
                 local newDistance = math.floor((lp.Character.HumanoidRootPart.Position - worldPos).Magnitude)
                 espObj.textLabel.Text = "🎯 " .. eventName .. "\n📍 " .. newDistance .. "m"
                 
-                -- Fade based on distance
-                local alpha = math.max(0.3, 1 - (newDistance / 2000))
-                espObj.frame.BackgroundTransparency = 1 - alpha
+                -- Fade based on distance (same as Player ESP)
+                local alpha = math.max(0.3, 1 - (newDistance / 1000))
+                espObj.textLabel.TextTransparency = 1 - alpha
             else
                 espObj.frame.Visible = false
             end
@@ -1425,6 +1441,19 @@ function EventSystem:createESPText(eventName, position, distance)
     end
     
     return espObj
+end
+
+-- Function to update ESP colors when color is changed
+function EventSystem:updateESPColors()
+    local newColor = self.colors[flags['eventespcolor'] or "White"]
+    
+    for eventName, espObj in pairs(self.espObjects) do
+        if espObj.textLabel then
+            espObj.textLabel.TextColor3 = newColor
+        end
+    end
+    
+    print("🎨 [Event ESP] Color changed to: " .. (flags['eventespcolor'] or "White"))
 end
 
 -- Function untuk scan event aktif dari workspace (Improved)
@@ -1525,6 +1554,11 @@ function EventSystem:toggleESP(enabled)
     
     -- Scan untuk event aktif
     self:scanActiveEvents()
+    
+    -- Set default color if not set
+    if not flags['eventespcolor'] then
+        flags['eventespcolor'] = "White"
+    end
     
     if #self.activeEvents == 0 then
         print("⚠️ [Event ESP] No active events found to display ESP")
@@ -1633,6 +1667,13 @@ if EventTab then
             EventSystem:startESPUpdates()
         else
             EventSystem:stopESPUpdates()
+        end
+    end)
+    
+    EventESPSection:NewDropdown("ESP Color", "Select event ESP color", {"Red", "Green", "Blue", "Yellow", "Purple", "Orange", "White", "Cyan"}, function(currentOption)
+        flags['eventespcolor'] = currentOption
+        if flags['eventesp'] then
+            EventSystem:updateESPColors()
         end
     end)
     
@@ -2682,6 +2723,7 @@ end
 print("🎣 Enhanced Fisch Script with ULTIMATE Super Instant Reel + Instant Bobber + Skip Cutscenes loaded successfully!")
 print("🚀 ULTIMATE Super Instant Reel: Ready for MAXIMUM fishing speed!")
 print("🎬 Skip Cutscenes: No more interruptions from boss fish captures!")
+print("👁️ Clean ESP System: Text-only Event & Player ESP with customizable colors!")
 print("⚡ INFO: When features are enabled, fishing becomes completely seamless and ultra-fast!")
 print("🔥 This is the FASTEST and most UNINTERRUPTED fishing system in Fisch!")
 
