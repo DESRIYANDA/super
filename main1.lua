@@ -38,6 +38,7 @@ flags['autoreeldelay'] = 0.5
 -- Super Instant Reel Variables
 flags['superinstantreel'] = false
 flags['instantbobber'] = false
+flags['enhancedinstantbobber'] = false
 local superInstantReelActive = false
 local lureMonitorConnection = nil
 
@@ -1800,8 +1801,21 @@ CastSection:NewToggle("Instant Bobber", "🚫 No animation, bobber drops close (
     if state then
         print("⚡ [Instant Bobber] Activated - No casting animation!")
         print("📍 [Instant Bobber] Bobber will drop close to player")
+        print("🌊 [Instant Bobber] Can penetrate solid objects to reach water!")
     else
         print("🎣 [Instant Bobber] Deactivated - Normal casting animation")
+    end
+end)
+
+-- NEW: Enhanced Instant Bobber Toggle
+CastSection:NewToggle("Enhanced Instant Bobber", "🌊 Penetrates solid objects & drops directly in water", function(state)
+    flags['enhancedinstantbobber'] = state
+    if state then
+        print("🌊 [Enhanced Instant Bobber] Activated - PENETRATES solid objects!")
+        print("⚡ [Enhanced Instant Bobber] Bobber goes directly to water!")
+        print("🚀 [Enhanced Instant Bobber] Uses negative distance for penetration!")
+    else
+        print("🎣 [Enhanced Instant Bobber] Deactivated - Normal bobber physics")
     end
 end)
 
@@ -2239,7 +2253,11 @@ RunService.Heartbeat:Connect(function()
             task.wait(currentDelay)
             
             -- Check instant bobber setting for casting behavior
-            if flags['instantbobber'] then
+            if flags['enhancedinstantbobber'] then
+                -- ENHANCED INSTANT BOBBER: Penetrates solid objects, drops directly in water
+                rod.events.cast:FireServer(-50, 1) -- Negative distance = penetrate objects to reach water
+                print("🌊 [Enhanced Instant Bobber] Cast through solid objects to water!")
+            elseif flags['instantbobber'] then
                 -- INSTANT BOBBER: No animation, close drop
                 rod.events.cast:FireServer(0, 1) -- Distance 0 = instant drop near player
                 print("⚡ [Instant Bobber] Cast with no animation!")
@@ -2506,6 +2524,12 @@ if CheckFunc(hookmetamethod) then
             return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'cast' and flags['perfectcast'] then
             args[1] = 100
+            return old(self, unpack(args))
+        elseif method == 'FireServer' and self.Name == 'cast' and flags['enhancedinstantbobber'] then
+            -- ENHANCED INSTANT BOBBER HOOK: Override manual casting untuk penetrate objects
+            args[1] = -50  -- Negative distance untuk penetrate solid objects ke air
+            args[2] = 1    -- Keep force parameter
+            print("🌊 [Enhanced Instant Bobber Hook] Manual cast penetrates objects to water!")
             return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'cast' and flags['instantbobber'] then
             -- INSTANT BOBBER HOOK: Override manual casting untuk instant drop
