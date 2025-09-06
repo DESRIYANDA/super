@@ -41,6 +41,88 @@ flags['instantbobber'] = false
 local superInstantReelActive = false
 local lureMonitorConnection = nil
 
+--// Essential Functions (Defined First)
+local function getchar()
+    return lp.Character or lp.CharacterAdded:Wait()
+end
+
+local function gethrp()
+    return getchar():WaitForChild('HumanoidRootPart')
+end
+
+local function gethum()
+    return getchar():WaitForChild('Humanoid')
+end
+
+local function FindChild(parent, name)
+    return parent:FindFirstChild(name)
+end
+
+local function FindChildOfClass(parent, className)
+    return parent:FindFirstChildOfClass(className)
+end
+
+local function FindRod()
+    pcall(function()
+        if FindChildOfClass(getchar(), 'Tool') and FindChild(FindChildOfClass(getchar(), 'Tool'), 'values') then
+            return FindChildOfClass(getchar(), 'Tool')
+        else
+            return nil
+        end
+    end)
+    
+    -- Safe fallback
+    local character = lp.Character
+    if character then
+        local tool = character:FindFirstChildOfClass('Tool')
+        if tool and tool:FindFirstChild('values') then
+            return tool
+        end
+    end
+    return nil
+end
+
+local function message(text, time)
+    pcall(function()
+        if tooltipmessage then 
+            tooltipmessage:Remove() 
+        end
+        
+        -- Try safe GUI tooltip method
+        local success = false
+        pcall(function()
+            local hud = lp.PlayerGui:FindFirstChild('hud')
+            if hud then
+                local safezone = hud:FindFirstChild('safezone')
+                if safezone then
+                    local backpack = safezone:FindFirstChild('backpack')
+                    if backpack then
+                        local notice = backpack:FindFirstChild('notice')
+                        if notice then
+                            tooltipmessage = notice
+                            tooltipmessage.Text = text
+                            tooltipmessage.Visible = true
+                            success = true
+                        end
+                    end
+                end
+            end
+        end)
+        
+        -- Fallback: just print to console if GUI method fails
+        if not success then
+            print("[MESSAGE] " .. text)
+        end
+        
+        if time then
+            task.wait(time)
+            if tooltipmessage then 
+                tooltipmessage.Visible = false 
+            end
+        end
+    end)
+end
+
 -- ULTIMATE Super Instant Reel System (TRUE INSTANT - NO ANIMATION)
 local function setupUltimateSuperInstantReel()
     if not superInstantReelActive then
@@ -837,42 +919,26 @@ FindChildOfClass = function(parent, classname)
     return parent:FindFirstChildOfClass(classname)
 end
 FindChild = function(parent, child)
-    return parent:FindFirstChild(child)
+    if parent and parent.FindFirstChild then
+        return parent:FindFirstChild(child)
+    end
+    return nil
+end
+FindChildOfClass = function(parent, className)
+    if parent and parent.FindFirstChildOfClass then
+        return parent:FindFirstChildOfClass(className)
+    end
+    return nil
 end
 FindChildOfType = function(parent, childname, classname)
-    child = parent:FindFirstChild(childname)
+    local child = FindChild(parent, childname)
     if child and child.ClassName == classname then
         return child
     end
+    return nil
 end
 CheckFunc = function(func)
     return typeof(func) == 'function'
-end
-
---// Custom Functions
-getchar = function()
-    return lp.Character or lp.CharacterAdded:Wait()
-end
-gethrp = function()
-    return getchar():WaitForChild('HumanoidRootPart')
-end
-gethum = function()
-    return getchar():WaitForChild('Humanoid')
-end
-FindRod = function()
-    if FindChildOfClass(getchar(), 'Tool') and FindChild(FindChildOfClass(getchar(), 'Tool'), 'values') then
-        return FindChildOfClass(getchar(), 'Tool')
-    else
-        return nil
-    end
-end
-message = function(text, time)
-    if tooltipmessage then tooltipmessage:Remove() end
-    tooltipmessage = require(lp.PlayerGui:WaitForChild("GeneralUIModule")):GiveToolTip(lp, text)
-    task.spawn(function()
-        task.wait(time)
-        if tooltipmessage then tooltipmessage:Remove(); tooltipmessage = nil end
-    end)
 end
 
 --// UI
