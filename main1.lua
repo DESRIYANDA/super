@@ -1365,7 +1365,7 @@ local ZONE_COORDS = {
     ["Hadal Blacksite"] = CFrame.new(-4465, -604, 1874)
 }
 
--- Function untuk membuat ESP Text dengan ScreenGui (lebih kompatibel)
+-- Function untuk membuat ESP Text dengan ScreenGui (Text Only, No Background)
 function EventSystem:createESPText(eventName, position, distance)
     local espObj = {}
     
@@ -1375,23 +1375,21 @@ function EventSystem:createESPText(eventName, position, distance)
     espObj.screenGui.Parent = lp.PlayerGui
     espObj.screenGui.ResetOnSpawn = false
     
-    -- Create Frame untuk ESP
+    -- Create Frame sebagai container (invisible)
     espObj.frame = Instance.new("Frame")
     espObj.frame.Size = UDim2.new(0, 150, 0, 40)
-    espObj.frame.BackgroundColor3 = EVENTS_DATA[eventName].color
-    espObj.frame.BackgroundTransparency = 0.3
-    espObj.frame.BorderSizePixel = 1
-    espObj.frame.BorderColor3 = Color3.fromRGB(255, 255, 255)
+    espObj.frame.BackgroundTransparency = 1  -- Completely transparent
+    espObj.frame.BorderSizePixel = 0  -- No border
     espObj.frame.Parent = espObj.screenGui
     
-    -- Create TextLabel
+    -- Create TextLabel (floating text only)
     espObj.textLabel = Instance.new("TextLabel")
     espObj.textLabel.Size = UDim2.new(1, 0, 1, 0)
-    espObj.textLabel.BackgroundTransparency = 1
+    espObj.textLabel.BackgroundTransparency = 1  -- No background
     espObj.textLabel.Text = "🎯 " .. eventName .. "\n📍 " .. distance .. "m"
-    espObj.textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    espObj.textLabel.TextColor3 = EVENTS_DATA[eventName].color  -- Use event color for text
     espObj.textLabel.TextStrokeTransparency = 0
-    espObj.textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    espObj.textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)  -- Black outline for visibility
     espObj.textLabel.TextScaled = true
     espObj.textLabel.Font = Enum.Font.SourceSansBold
     espObj.textLabel.Parent = espObj.frame
@@ -1903,6 +1901,185 @@ local FishSection = VisualTab:NewSection("Fish Abundance")
 FishSection:NewToggle("Free Fish Radar", "Show fish abundance zones", function(state)
     flags['fishabundance'] = state
 end)
+
+local PlayerSection = VisualTab:NewSection("Player ESP")
+PlayerSection:NewToggle("Player ESP", "👥 Show all players with distance and name", function(state)
+    flags['playeresp'] = state
+    if state then
+        createPlayerESP()
+        print("👥 [Player ESP] Activated - Showing all players!")
+    else
+        clearPlayerESP()
+        print("👥 [Player ESP] Deactivated")
+    end
+end)
+PlayerSection:NewDropdown("ESP Color", "Select player ESP color", {"Red", "Green", "Blue", "Yellow", "Purple", "Orange", "White"}, function(currentOption)
+    flags['playerespcolor'] = currentOption
+    if flags['playeresp'] then
+        updatePlayerESPColor()
+    end
+end)
+
+-- Player ESP System
+local PlayerESP = {
+    espObjects = {},
+    colors = {
+        ["Red"] = Color3.fromRGB(255, 0, 0),
+        ["Green"] = Color3.fromRGB(0, 255, 0),
+        ["Blue"] = Color3.fromRGB(0, 100, 255),
+        ["Yellow"] = Color3.fromRGB(255, 255, 0),
+        ["Purple"] = Color3.fromRGB(128, 0, 128),
+        ["Orange"] = Color3.fromRGB(255, 165, 0),
+        ["White"] = Color3.fromRGB(255, 255, 255)
+    }
+}
+
+function PlayerESP:createESPForPlayer(player)
+    if player == lp then return end -- Don't ESP ourselves
+    if self.espObjects[player] then return end -- Already has ESP
+    
+    local espObj = {}
+    espObj.player = player
+    
+    -- Create ScreenGui
+    espObj.screenGui = Instance.new("ScreenGui")
+    espObj.screenGui.Name = "PlayerESP_" .. player.Name
+    espObj.screenGui.Parent = lp.PlayerGui
+    espObj.screenGui.ResetOnSpawn = false
+    
+    -- Create Frame (invisible container)
+    espObj.frame = Instance.new("Frame")
+    espObj.frame.Size = UDim2.new(0, 120, 0, 30)
+    espObj.frame.BackgroundTransparency = 1
+    espObj.frame.BorderSizePixel = 0
+    espObj.frame.Parent = espObj.screenGui
+    
+    -- Create TextLabel
+    espObj.textLabel = Instance.new("TextLabel")
+    espObj.textLabel.Size = UDim2.new(1, 0, 1, 0)
+    espObj.textLabel.BackgroundTransparency = 1
+    espObj.textLabel.Text = "👤 " .. player.Name .. "\n📍 0m"
+    espObj.textLabel.TextColor3 = self.colors[flags['playerespcolor'] or "White"]
+    espObj.textLabel.TextStrokeTransparency = 0
+    espObj.textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    espObj.textLabel.TextScaled = true
+    espObj.textLabel.Font = Enum.Font.SourceSansBold
+    espObj.textLabel.Parent = espObj.frame
+    
+    -- Update function
+    espObj.updatePosition = function()
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            espObj.frame.Visible = false
+            return
+        end
+        
+        if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then
+            espObj.frame.Visible = false
+            return
+        end
+        
+        local camera = workspace.CurrentCamera
+        local playerPos = player.Character.HumanoidRootPart.Position
+        
+        -- Convert 3D world position to 2D screen position
+        local screenPos, onScreen = camera:WorldToScreenPoint(playerPos)
+        
+        if onScreen and screenPos.Z > 0 then
+            -- Position on screen
+            espObj.frame.Position = UDim2.new(0, screenPos.X - 60, 0, screenPos.Y - 15)
+            espObj.frame.Visible = true
+            
+            -- Update distance
+            local distance = math.floor((lp.Character.HumanoidRootPart.Position - playerPos).Magnitude)
+            espObj.textLabel.Text = "👤 " .. player.Name .. "\n📍 " .. distance .. "m"
+            
+            -- Fade based on distance (closer = more visible)
+            local alpha = math.max(0.3, 1 - (distance / 1000))
+            espObj.textLabel.TextTransparency = 1 - alpha
+        else
+            espObj.frame.Visible = false
+        end
+    end
+    
+    self.espObjects[player] = espObj
+end
+
+function PlayerESP:removeESPForPlayer(player)
+    if self.espObjects[player] then
+        if self.espObjects[player].screenGui then
+            self.espObjects[player].screenGui:Destroy()
+        end
+        self.espObjects[player] = nil
+    end
+end
+
+function createPlayerESP()
+    -- Set default color if not set
+    if not flags['playerespcolor'] then
+        flags['playerespcolor'] = "White"
+    end
+    
+    -- Create ESP for all current players
+    for _, player in pairs(game.Players:GetPlayers()) do
+        PlayerESP:createESPForPlayer(player)
+    end
+    
+    -- Listen for new players
+    PlayerESP.playerAddedConnection = game.Players.PlayerAdded:Connect(function(player)
+        if flags['playeresp'] then
+            PlayerESP:createESPForPlayer(player)
+        end
+    end)
+    
+    -- Listen for players leaving
+    PlayerESP.playerRemovingConnection = game.Players.PlayerRemoving:Connect(function(player)
+        PlayerESP:removeESPForPlayer(player)
+    end)
+    
+    -- Start update loop
+    PlayerESP.updateConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if flags['playeresp'] then
+            for player, espObj in pairs(PlayerESP.espObjects) do
+                if espObj.updatePosition then
+                    espObj.updatePosition()
+                end
+            end
+        end
+    end)
+end
+
+function clearPlayerESP()
+    -- Remove all ESP objects
+    for player, espObj in pairs(PlayerESP.espObjects) do
+        PlayerESP:removeESPForPlayer(player)
+    end
+    
+    -- Disconnect connections
+    if PlayerESP.playerAddedConnection then
+        PlayerESP.playerAddedConnection:Disconnect()
+        PlayerESP.playerAddedConnection = nil
+    end
+    
+    if PlayerESP.playerRemovingConnection then
+        PlayerESP.playerRemovingConnection:Disconnect()
+        PlayerESP.playerRemovingConnection = nil
+    end
+    
+    if PlayerESP.updateConnection then
+        PlayerESP.updateConnection:Disconnect()
+        PlayerESP.updateConnection = nil
+    end
+end
+
+function updatePlayerESPColor()
+    local newColor = PlayerESP.colors[flags['playerespcolor'] or "White"]
+    
+    for player, espObj in pairs(PlayerESP.espObjects) do
+        if espObj.textLabel then
+            espObj.textLabel.TextColor3 = newColor
+        end
+    end
+end
 
 --// Loops
 RunService.Heartbeat:Connect(function()
