@@ -41,61 +41,16 @@ flags['instantbobber'] = false
 local superInstantReelActive = false
 local lureMonitorConnection = nil
 
--- ULTIMATE Super Instant Reel System (ABSOLUTE ZERO ANIMATION)
+-- Disable Animations Variables
+flags['disableanimations'] = false
+flags['blockrodwave'] = false
+flags['blockshakeeffects'] = false
+flags['blockexaltedanim'] = false
+
+-- ULTIMATE Super Instant Reel System (TRUE INSTANT - NO ANIMATION)
 local function setupUltimateSuperInstantReel()
     if not superInstantReelActive then
         superInstantReelActive = true
-        
-        -- BLOCK ALL FISHING ANIMATION REMOTES
-        local function blockFishingAnimations()
-            pcall(function()
-                -- Block shake UI system (causes pre-reel animation)
-                if ReplicatedStorage:FindFirstChild("resources") then
-                    local shakeUI = ReplicatedStorage.resources.replicated.fishing.shakeui
-                    if shakeUI and shakeUI:FindFirstChild("safezone") then
-                        local shakeButton = shakeUI.safezone.shakeui.button.shake
-                        local cancelShake = ReplicatedStorage.resources.replicated.fishing.shakeui.cancel
-                        
-                        -- Disable shake animations completely
-                        shakeButton.OnClientEvent:Connect(function() return end)
-                        cancelShake.OnClientEvent:Connect(function() return end)
-                    end
-                end
-                
-                -- Block bobber handle animations
-                if ReplicatedStorage:FindFirstChild("shared") then
-                    local rodEvents = ReplicatedStorage.shared.modules.fishing.rodresources.events
-                    if rodEvents then
-                        -- Block handlebobber (pre-reel animation)
-                        if rodEvents:FindFirstChild("handlebobber") then
-                            local originalHandleBobber = rodEvents.handlebobber.FireServer
-                            rodEvents.handlebobber.FireServer = function(...)
-                                if flags['superinstantreel'] then
-                                    return -- Block completely
-                                else
-                                    return originalHandleBobber(...)
-                                end
-                            end
-                        end
-                        
-                        -- Block breakbobber (break animation)
-                        if rodEvents:FindFirstChild("breakbobber") then
-                            local originalBreakBobber = rodEvents.breakbobber.FireServer
-                            rodEvents.breakbobber.FireServer = function(...)
-                                if flags['superinstantreel'] then
-                                    return -- Block completely
-                                else
-                                    return originalBreakBobber(...)
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-        
-        -- Apply blocks immediately
-        blockFishingAnimations()
         
         -- Method 1: ULTRA-AGGRESSIVE bite detection with instant execution
         lureMonitorConnection = RunService.Heartbeat:Connect(function()
@@ -109,26 +64,23 @@ local function setupUltimateSuperInstantReel()
                         
                         -- INSTANT catch when lure >= 95% OR bite detected (ZERO ANIMATION)
                         if lureValue >= 95 or biteValue == true then
-                            -- BLOCK ALL ANIMATION REMOTES FIRST
-                            blockFishingAnimations()
-                            
                             -- MEGA-FIRE: Multiple instant calls for absolute zero delay
                             for i = 1, 15 do
                                 ReplicatedStorage.events.reelfinished:FireServer(100, true)
                             end
                             
-                            -- DESTROY ALL REEL/SHAKE GUI INSTANTLY
+                            -- DESTROY ALL REEL-RELATED GUI INSTANTLY
                             for _, gui in pairs(lp.PlayerGui:GetChildren()) do
-                                if gui.Name == "reel" or gui.Name == "shakeui" or gui.Name:lower():find("reel") or gui.Name:lower():find("shake") or gui:FindFirstChild("reel") then
+                                if gui.Name == "reel" or gui.Name:lower():find("reel") or gui:FindFirstChild("reel") then
                                     gui.Enabled = false
                                     gui.Parent = nil
                                     gui:Destroy()
                                 end
                             end
                             
-                            -- Block any reel/shake related sounds or effects
+                            -- Block any reel-related sounds or effects
                             for _, sound in pairs(workspace:GetDescendants()) do
-                                if sound:IsA("Sound") and (sound.Name:lower():find("reel") or sound.Name:lower():find("shake") or sound.Name:lower():find("fish")) then
+                                if sound:IsA("Sound") and sound.Name:lower():find("reel") then
                                     sound.Volume = 0
                                     sound:Stop()
                                 end
@@ -211,47 +163,8 @@ local function setupUltimateSuperInstantReel()
             end
         end)
         
-        -- Method 5: Block handlebobber and shake remotes for individual rods
-        task.spawn(function()
-            while flags['superinstantreel'] do
-                pcall(function()
-                    local rod = FindRod()
-                    if rod and rod:FindFirstChild("events") then
-                        -- Block handlebobber for current rod
-                        if rod.events:FindFirstChild("handlebobber") then
-                            local originalHandleBobber = rod.events.handlebobber.FireServer
-                            rod.events.handlebobber.FireServer = function(...)
-                                if flags['superinstantreel'] then
-                                    -- Instant reel instead of handle bobber animation
-                                    ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                                    print("🚫 [HANDLEBOBBER BLOCKED] Replaced with instant reel!")
-                                    return
-                                else
-                                    return originalHandleBobber(...)
-                                end
-                            end
-                        end
-                        
-                        -- Block breakbobber for current rod
-                        if rod.events:FindFirstChild("breakbobber") then
-                            local originalBreakBobber = rod.events.breakbobber.FireServer
-                            rod.events.breakbobber.FireServer = function(...)
-                                if flags['superinstantreel'] then
-                                    return -- Just block, don't do anything
-                                else
-                                    return originalBreakBobber(...)
-                                end
-                            end
-                        end
-                    end
-                end)
-                task.wait(1) -- Check every second for new rods
-            end
-        end)
-        
         print("✅ [ULTIMATE ZERO-ANIMATION REEL] Maximum speed system activated!")
         print("🔥 ALL reel animations and delays have been ELIMINATED!")
-        print("🚫 HANDLEBOBBER and SHAKE animations are now BLOCKED!")
     end
 end
 
@@ -1982,6 +1895,44 @@ ClientSection:NewToggle("Skip Fish Cutscenes", "🎬 Skip all fish capture cutsc
     end
 end)
 
+-- NEW: Disable Animations System
+local AnimationSection = ModTab:NewSection("🎭 Animation Control")
+AnimationSection:NewToggle("Disable All Animations", "🚫 Block all fishing animations and effects", function(state)
+    flags['disableanimations'] = state
+    if state then
+        print("🚫 [Disable Animations] Activated - ALL fishing animations blocked!")
+    else
+        print("🎭 [Disable Animations] Deactivated - Normal animations restored")
+    end
+end)
+
+AnimationSection:NewToggle("Block Rod Wave", "🌊 Stop rod wave animation effects", function(state)
+    flags['blockrodwave'] = state
+    if state then
+        print("🌊 [Block Rod Wave] Activated - Rod wave effects disabled!")
+    else
+        print("🌊 [Block Rod Wave] Deactivated - Rod wave effects enabled")
+    end
+end)
+
+AnimationSection:NewToggle("Block Shake Effects", "📳 Stop screen shake effects", function(state)
+    flags['blockshakeeffects'] = state
+    if state then
+        print("📳 [Block Shake Effects] Activated - Screen shake disabled!")
+    else
+        print("📳 [Block Shake Effects] Deactivated - Screen shake enabled")
+    end
+end)
+
+AnimationSection:NewToggle("Block Exalted Rod Anim", "✨ Stop special rod animations (Exalted, etc.)", function(state)
+    flags['blockexaltedanim'] = state
+    if state then
+        print("✨ [Block Exalted Anim] Activated - Special rod animations disabled!")
+    else
+        print("✨ [Block Exalted Anim] Deactivated - Special rod animations enabled")
+    end
+end)
+
 -- Teleports Section
 local LocationSection = TeleTab:NewSection("Locations")
 LocationSection:NewDropdown("Select Zone", "Choose a zone to teleport to", ZoneNames, function(currentOption)
@@ -2630,6 +2581,89 @@ if CheckFunc(hookmetamethod) then
                 end)
             end
         end
+        
+        -- 🚫 DISABLE ANIMATIONS SYSTEM - Hook all animation remotes
+        if flags['disableanimations'] then
+            local originalFireServer = remote.FireServer
+            remote.FireServer = function(self, ...)
+                local remoteName = tostring(self)
+                
+                -- Block all animation-related remotes
+                local blockedAnimations = {
+                    "rodwave", "shakehudeffect", "exalted_rod_animation",
+                    "LocalCutscene", "RequestCutscene", "RequestCutsceneSync",
+                    "Fischfest/TideAnimation", "AnglerfishMinigame/DeathEffect",
+                    "BaitWhirlPoolPassive/Visual", "emoteCancel", "viewUtilities"
+                }
+                
+                for _, blockedAnim in pairs(blockedAnimations) do
+                    if remoteName:find(blockedAnim) then
+                        print("🚫 [Disable Animations] Blocked: " .. blockedAnim)
+                        return -- Block the animation
+                    end
+                end
+                
+                return originalFireServer(self, ...)
+            end
+        end
+        
+        -- 🌊 BLOCK ROD WAVE - Specific blocking for rod wave effects
+        if flags['blockrodwave'] then
+            pcall(function()
+                if ReplicatedStorage.events:FindFirstChild("rodwave") then
+                    local originalRodWave = ReplicatedStorage.events.rodwave.FireServer
+                    ReplicatedStorage.events.rodwave.FireServer = function(...)
+                        print("🌊 [Block Rod Wave] Blocked rod wave animation!")
+                        return -- Block rod wave
+                    end
+                end
+            end)
+        end
+        
+        -- 📳 BLOCK SHAKE EFFECTS - Stop screen shake effects
+        if flags['blockshakeeffects'] then
+            pcall(function()
+                if ReplicatedStorage.events:FindFirstChild("shakehudeffect") then
+                    local originalShake = ReplicatedStorage.events.shakehudeffect.FireServer
+                    ReplicatedStorage.events.shakehudeffect.FireServer = function(...)
+                        print("📳 [Block Shake Effects] Blocked screen shake!")
+                        return -- Block shake effects
+                    end
+                end
+                
+                -- Block shake UI as well
+                if ReplicatedStorage.resources and 
+                   ReplicatedStorage.resources.replicated and
+                   ReplicatedStorage.resources.replicated.fishing and
+                   ReplicatedStorage.resources.replicated.fishing.shakeui then
+                    
+                    local shakeUI = ReplicatedStorage.resources.replicated.fishing.shakeui
+                    if shakeUI:FindFirstChild("safezone") then
+                        local shakeButton = shakeUI.safezone.shakeui.button
+                        if shakeButton:FindFirstChild("shake") then
+                            local originalShakeUI = shakeButton.shake.FireServer
+                            shakeButton.shake.FireServer = function(...)
+                                print("📳 [Block Shake Effects] Blocked shake UI!")
+                                return -- Block shake UI
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        
+        -- ✨ BLOCK EXALTED ROD ANIMATION - Stop special rod animations
+        if flags['blockexaltedanim'] then
+            pcall(function()
+                if ReplicatedStorage.events:FindFirstChild("exalted_rod_animation") then
+                    local originalExalted = ReplicatedStorage.events.exalted_rod_animation.FireServer
+                    ReplicatedStorage.events.exalted_rod_animation.FireServer = function(...)
+                        print("✨ [Block Exalted Anim] Blocked special rod animation!")
+                        return -- Block exalted rod animation
+                    end
+                end
+            end)
+        end
     end)
 end
 
@@ -2719,6 +2753,37 @@ if flags then
                         -- NO delay at all - continue checking immediately
                     end
                 end
+            end
+            
+            -- 🚫 DISABLE ANIMATIONS MONITORING - Real-time animation blocking
+            if flags['disableanimations'] then
+                pcall(function()
+                    -- Block animation GUIs from appearing
+                    for _, gui in pairs(lp.PlayerGui:GetChildren()) do
+                        local guiName = gui.Name:lower()
+                        
+                        -- Block animation-related GUIs
+                        local blockedGUINames = {
+                            "shake", "wave", "effect", "anim", "cutscene",
+                            "exalted", "special", "rod_animation", "fishing_effect"
+                        }
+                        
+                        for _, blockedName in pairs(blockedGUINames) do
+                            if guiName:find(blockedName) then
+                                gui:Destroy()
+                                print("🚫 [Animation Block] Destroyed GUI: " .. gui.Name)
+                            end
+                        end
+                    end
+                    
+                    -- Block animation sounds
+                    for _, obj in pairs(workspace:GetDescendants()) do
+                        if obj:IsA("Sound") and obj.Name:lower():find("animation") then
+                            obj.Volume = 0
+                            obj:Stop()
+                        end
+                    end
+                end)
             end
         end
     end)
@@ -2831,7 +2896,26 @@ end
 4. No interruption during legendary fish catches
 5. Maintains normal fishing experience without cutscenes
 
-📋 Boss Fish Cutscenes Covered:
+� How Disable Animations works:
+1. Blocks ALL fishing-related animation remote events
+2. Stops rod wave, shake effects, and special rod animations
+3. Destroys animation GUIs before they can render
+4. Mutes animation sounds and visual effects
+5. Creates completely clean fishing experience
+
+🎭 Animation Control Features:
+- Disable All Animations: Complete animation blocking system
+- Block Rod Wave: Stop rod wave effects specifically
+- Block Shake Effects: Remove screen shake and UI shake
+- Block Exalted Rod Anim: Stop special rod animations
+
+🚫 Blocked Animation Remotes:
+- rodwave, shakehudeffect, exalted_rod_animation
+- LocalCutscene, RequestCutscene, RequestCutsceneSync
+- Fischfest/TideAnimation, AnglerfishMinigame/DeathEffect
+- BaitWhirlPoolPassive/Visual, emoteCancel, viewUtilities
+
+�📋 Boss Fish Cutscenes Covered:
 - Megalodon, Kraken, Scylla, Moby Dick
 - Sea Leviathan, Frozen Leviathan, Magma Leviathan
 - Crowned Angler, Crystallized Seadragon, Lobster King  
@@ -2868,86 +2952,32 @@ print("👁️ Clean ESP System: Text-only Event & Player ESP with customizable 
 print("⚡ INFO: When features are enabled, fishing becomes completely seamless and ultra-fast!")
 print("🔥 This is the FASTEST and most UNINTERRUPTED fishing system in Fisch!")
 
--- ULTIMATE HOOK SYSTEM - Blocks ALL fishing animations entirely
+-- ULTIMATE HOOK SYSTEM - Blocks reel GUI creation entirely
 local originalInstanceNew = Instance.new
 Instance.new = function(className, ...)
     local instance = originalInstanceNew(className, ...)
     
-    -- Block ANY GUI creation related to fishing animations
+    -- Block reel GUI creation when Super Instant Reel is active
     if flags['superinstantreel'] and className == "ScreenGui" and instance.Parent == lp.PlayerGui then
         instance.ChildAdded:Connect(function(child)
-            -- Block reel, shake, and any fishing GUI
-            if child.Name == "reel" or child.Name == "shakeui" or child.Name:lower():find("reel") or child.Name:lower():find("shake") or child.Name:lower():find("fish") then
+            if child.Name == "reel" or child.Name:lower():find("reel") then
                 -- INSTANTLY destroy and complete
                 child:Destroy()
                 
-                -- MEGA-FIRE for absolute completion
-                for i = 1, 25 do
+                -- Triple fire for absolute completion
+                for i = 1, 3 do
                     pcall(function()
                         ReplicatedStorage.events.reelfinished:FireServer(100, true)
                     end)
                 end
                 
-                print("🚫 [ULTIMATE BLOCK] " .. child.Name .. " GUI blocked - INSTANT COMPLETION!")
+                print("🚫 [ULTIMATE BLOCK] Reel GUI blocked - INSTANT COMPLETION!")
             end
         end)
     end
     
     return instance
 end
-
--- ADDITIONAL HANDLEBOBBER/SHAKE BLOCKER
-task.spawn(function()
-    while true do
-        if flags['superinstantreel'] then
-            pcall(function()
-                -- Block shake UI remotes continuously  
-                local shakeRemote = ReplicatedStorage:FindFirstChild("resources")
-                if shakeRemote and shakeRemote.replicated and shakeRemote.replicated.fishing and shakeRemote.replicated.fishing.shakeui then
-                    local shakeButton = shakeRemote.replicated.fishing.shakeui.safezone.shakeui.button.shake
-                    local cancelShake = shakeRemote.replicated.fishing.shakeui.cancel
-                    
-                    -- Intercept shake calls and convert to instant reel
-                    if shakeButton then
-                        local originalShake = shakeButton.FireServer
-                        shakeButton.FireServer = function(...)
-                            if flags['superinstantreel'] then
-                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                                print("🚫 [SHAKE BLOCKED] Converted to instant reel!")
-                                return
-                            else
-                                return originalShake(...)
-                            end
-                        end
-                    end
-                    
-                    if cancelShake then
-                        local originalCancel = cancelShake.FireServer  
-                        cancelShake.FireServer = function(...)
-                            if flags['superinstantreel'] then
-                                return -- Just block
-                            else
-                                return originalCancel(...)
-                            end
-                        end
-                    end
-                end
-                
-                -- Destroy any existing shake/reel GUI
-                for _, gui in pairs(lp.PlayerGui:GetChildren()) do
-                    if gui.Name == "reel" or gui.Name == "shakeui" or gui.Name:lower():find("shake") or gui.Name:lower():find("reel") then
-                        gui:Destroy()
-                        -- Instant complete when GUI is destroyed
-                        for i = 1, 5 do
-                            ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                        end
-                    end
-                end
-            end)
-        end
-        task.wait(0.1) -- Check every 100ms
-    end
-end)
 
 -- FINAL SAFETY NET - Continuous monitoring
 task.spawn(function()
