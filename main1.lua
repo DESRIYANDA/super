@@ -87,7 +87,7 @@ local function setupUltimateSuperInstantReel()
                                 end
                             end
                             
-                            print("⚡ [ZERO ANIMATION] Lure:" .. lureValue .. "% - INSTANT CATCH!")
+                            -- print("⚡ [ZERO ANIMATION] Lure:" .. lureValue .. "% - INSTANT CATCH!")
                         end
                         
                         -- PREVENTIVE: Destroy any reel GUI that appears
@@ -96,7 +96,7 @@ local function setupUltimateSuperInstantReel()
                                 ReplicatedStorage.events.reelfinished:FireServer(100, true)
                             end
                             lp.PlayerGui.reel:Destroy()
-                            print("🚀 [GUI BLOCKED] Reel interface destroyed!")
+                            -- print("🚀 [GUI BLOCKED] Reel interface destroyed!")
                         end
                     end
                 end)
@@ -116,7 +116,7 @@ local function setupUltimateSuperInstantReel()
                         ReplicatedStorage.events.reelfinished:FireServer(100, true)
                     end
                     
-                    print("� [GUI INTERCEPTED] Reel GUI destroyed before showing!")
+                    -- print("� [GUI INTERCEPTED] Reel GUI destroyed before showing!")
                 end)
             end
         end)
@@ -160,12 +160,12 @@ local function setupUltimateSuperInstantReel()
                 for i = 1, 10 do
                     ReplicatedStorage.events.reelfinished:FireServer(100, true)
                 end
-                print("🔥 [EVENT HOOK] Reel event intercepted - INSTANT COMPLETE!")
+                -- print("🔥 [EVENT HOOK] Reel event intercepted - INSTANT COMPLETE!")
             end
         end)
         
-        print("✅ [ULTIMATE ZERO-ANIMATION REEL] Maximum speed system activated!")
-        print("🔥 ALL reel animations and delays have been ELIMINATED!")
+        -- print("✅ [ULTIMATE ZERO-ANIMATION REEL] Maximum speed system activated!")
+        -- print("🔥 ALL reel animations and delays have been ELIMINATED!")
     end
 end
 
@@ -933,7 +933,7 @@ pcall(function()
     library = loadstring(game:HttpGet(kavoUrl))()
     if library and library.CreateLib then
         success = true
-        print("✅ Kavo loaded from GitHub repo")
+        -- print("✅ Kavo loaded from GitHub repo")
     end
 end)
 
@@ -949,7 +949,7 @@ if not success then
             library = loadstring(game:HttpGet(url))()
             if library and library.CreateLib then
                 success = true
-                print("✅ Kavo loaded from backup URL " .. i)
+                -- print("✅ Kavo loaded from backup URL " .. i)
             end
         end)
         if success then break end
@@ -961,11 +961,11 @@ if not success or not library then
     error("❌ Failed to load Kavo UI library from all sources!")
 end
 
-print("🎣 Kavo UI library loaded successfully!")
+-- print("🎣 Kavo UI library loaded successfully!")
 
 -- Load Shop Module
 local Shop
-print("🔄 Attempting to load Shop module...")
+-- print("🔄 Attempting to load Shop module...")
 
 -- Enable HttpService if possible
 pcall(function()
@@ -974,40 +974,40 @@ end)
 
 pcall(function()
     -- Try to load from the same workspace
-    print("📡 Downloading shop module from GitHub...")
+    -- print("📡 Downloading shop module from GitHub...")
     local shopContent = game:HttpGet('https://raw.githubusercontent.com/DESRIYANDA/Fishccch/main/shop.lua')
     if shopContent and #shopContent > 100 then
-        print("✅ Shop content downloaded successfully, size: " .. #shopContent)
+        -- print("✅ Shop content downloaded successfully, size: " .. #shopContent)
         Shop = loadstring(shopContent)()
         if Shop then
-            print("✅ Shop module loaded from repository!")
+            -- print("✅ Shop module loaded from repository!")
         else
-            warn("❌ Failed to execute shop module code")
+            -- warn("❌ Failed to execute shop module code")
         end
     else
-        warn("❌ Shop content download failed or too small")
+        -- warn("❌ Shop content download failed or too small")
     end
 end)
 
 -- Fallback: Try to load from local file
 if not Shop then
-    warn("⚠️ Shop module not found from repository, trying local file...")
+    -- warn("⚠️ Shop module not found from repository, trying local file...")
     pcall(function()
         if readfile and isfile and isfile("shop.lua") then
             local localContent = readfile("shop.lua")
             Shop = loadstring(localContent)()
-            print("✅ Shop module loaded from local file!")
+            -- print("✅ Shop module loaded from local file!")
         else
-            warn("❌ Local shop.lua file not found")
+            -- warn("❌ Local shop.lua file not found")
         end
     end)
 end
 
 if Shop then
-    print("✅ Shop module is ready!")
+    -- print("✅ Shop module is ready!")
 else
-    warn("❌ Shop module failed to load from all sources")
-    print("🔧 Creating embedded shop module as final fallback...")
+    -- warn("❌ Shop module failed to load from all sources")
+    -- print("🔧 Creating embedded shop module as final fallback...")
     
     -- Embedded shop module as final fallback
     Shop = {}
@@ -1033,19 +1033,19 @@ else
             'Quality Bait Crate (Atlantis)', 'Quality Bait Crate (Terrapin)'
         }, function(crate)
             shopFlags.selectedbaitcrate = crate
-            print("Selected: " .. crate)
+            -- print("Selected: " .. crate)
         end)
         
         ShopSection:NewTextBox("Amount", "Enter amount (1-1000)", function(txt)
             local amount = tonumber(txt)
             if amount and amount > 0 and amount <= 1000 then
                 shopFlags.baitamount = amount
-                print("Set amount: " .. amount)
+                -- print("Set amount: " .. amount)
             end
         end)
         
         ShopSection:NewButton("💰 Buy Bait", "Buy bait from selected crate", function()
-            print("🛒 Buying " .. shopFlags.baitamount .. "x from " .. shopFlags.selectedbaitcrate)
+            -- print("🛒 Buying " .. shopFlags.baitamount .. "x from " .. shopFlags.selectedbaitcrate)
             
             if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and crateLocations[shopFlags.selectedbaitcrate] then
                 lp.Character.HumanoidRootPart.CFrame = crateLocations[shopFlags.selectedbaitcrate]
@@ -1063,7 +1063,7 @@ else
                         local purchaseRemote = buyRemote.Net:FindFirstChild("RE/DailyShop/Purchase")
                         if purchaseRemote then
                             purchaseRemote:FireServer(shopFlags.selectedbaitcrate, shopFlags.baitamount)
-                            print("✅ Purchase request sent!")
+                            -- print("✅ Purchase request sent!")
                         end
                     end
                 end)
@@ -1087,7 +1087,7 @@ else
         
         return ShopTab
     end
-    print("✅ Embedded shop module created!")
+    -- print("✅ Embedded shop module created!")
 end
 
 -- Function to create floating button
@@ -1202,14 +1202,14 @@ local success = pcall(function()
         end
         
         Window = library.CreateLib("🎣 Fisch Script", "Ocean")
-        print("✅ Main UI window created successfully")
+        -- print("✅ Main UI window created successfully")
     else
         error("❌ Library not available")
     end
 end)
 
 if not success or not Window then
-    warn("⚠️ Failed to create UI window, retrying with alternative method...")
+    -- warn("⚠️ Failed to create UI window, retrying with alternative method...")
     
     -- Try alternative creation
     pcall(function()
@@ -1218,7 +1218,7 @@ if not success or not Window then
     end)
     
     if not Window then
-        warn("⚠️ UI window creation failed, script will continue without GUI")
+        -- warn("⚠️ UI window creation failed, script will continue without GUI")
     end
 end
 
@@ -1234,14 +1234,14 @@ if Window and Window.NewTab then
         EventTab = Window:NewTab("⭐ Zona Event")
         
         -- Create Shop Tab using Shop Module
-        print("🛒 Creating Shop tab...")
+        -- print("🛒 Creating Shop tab...")
         if Shop and Shop.createShopTab then
-            print("✅ Shop module found, creating advanced shop tab...")
+            -- print("✅ Shop module found, creating advanced shop tab...")
             ShopTab = Shop:createShopTab(Window)
-            print("✅ Shop tab created successfully")
+            -- print("✅ Shop tab created successfully")
         else
-            warn("⚠️ Shop module not available, creating basic shop tab...")
-            print("🔧 Creating fallback shop tab...")
+            -- warn("⚠️ Shop module not available, creating basic shop tab...")
+            -- print("🔧 Creating fallback shop tab...")
             -- Fallback: Create basic shop tab
             ShopTab = Window:NewTab("🛒 Shop")
             local ShopSection = ShopTab:NewSection("Auto Buy Bait")
@@ -1264,7 +1264,7 @@ if Window and Window.NewTab then
             end)
             
             ShopSection:NewButton("💰 Buy Bait", "Buy bait from selected crate", function()
-                print("🛒 Attempting to buy " .. shopFlags.baitamount .. "x from " .. shopFlags.selectedbaitcrate)
+                -- print("🛒 Attempting to buy " .. shopFlags.baitamount .. "x from " .. shopFlags.selectedbaitcrate)
                 
                 -- Basic teleport to crate locations
                 local crateLocations = {
@@ -1293,20 +1293,20 @@ if Window and Window.NewTab then
                             purchaseRemote = buyRemote.Net:FindFirstChild("RE/DailyShop/Purchase")
                             if purchaseRemote then
                                 purchaseRemote:FireServer(shopFlags.selectedbaitcrate, shopFlags.baitamount)
-                                print("✅ Purchase request sent!")
+                                -- print("✅ Purchase request sent!")
                             end
                         end
                     end)
                 end
             end)
             
-            print("✅ Basic shop tab created successfully")
+            -- print("✅ Basic shop tab created successfully")
         end
         
-        print("✅ All tabs created successfully")
+        -- print("✅ All tabs created successfully")
     end)
 else
-    warn("⚠️ Window not available, creating fallback functionality")
+    -- warn("⚠️ Window not available, creating fallback functionality")
     -- Create dummy tabs that won't break the script
     local dummyTab = {
         NewSection = function(name)
@@ -1334,7 +1334,7 @@ else
     TeleTab = dummyTab
     VisualTab = dummyTab
     EventTab = dummyTab
-    print("⚠️ Using fallback tabs - script functionality preserved")
+    -- print("⚠️ Using fallback tabs - script functionality preserved")
 end
 
 -- ===== EVENT ZONE ESP & TELEPORT SYSTEM =====
@@ -1494,7 +1494,7 @@ function EventSystem:updateESPColors()
         end
     end
     
-    print("🎨 [Event ESP] Color changed to: " .. (flags['eventespcolor'] or "White"))
+    -- print("🎨 [Event ESP] Color changed to: " .. (flags['eventespcolor'] or "White"))
 end
 
 -- Function untuk scan event aktif dari workspace (Improved)
@@ -1564,17 +1564,17 @@ function EventSystem:scanActiveEvents()
             local demoEvents = {"Fish Abundance", "Shark Hunt", "Whirlpool"}
             local selectedDemo = demoEvents[math.random(1, #demoEvents)]
             table.insert(self.activeEvents, selectedDemo)
-            print("🎮 [Demo Mode] Added " .. selectedDemo .. " for testing")
+            -- print("🎮 [Demo Mode] Added " .. selectedDemo .. " for testing")
         end
     end)
     
     self.isScanning = false
-    print("🔍 [Event Scanner] Found " .. #self.activeEvents .. " active events")
+    -- print("🔍 [Event Scanner] Found " .. #self.activeEvents .. " active events")
     
     -- Print found events
     if #self.activeEvents > 0 then
         for i, eventName in pairs(self.activeEvents) do
-            print("  " .. i .. ". 🎯 " .. eventName)
+            -- print("  " .. i .. ". 🎯 " .. eventName)
         end
     end
 end
@@ -1589,7 +1589,7 @@ function EventSystem:toggleESP(enabled)
             end
         end
         self.espObjects = {}
-        print("❌ [Event ESP] Disabled")
+        -- print("❌ [Event ESP] Disabled")
         return
     end
     
@@ -1602,7 +1602,7 @@ function EventSystem:toggleESP(enabled)
     end
     
     if #self.activeEvents == 0 then
-        print("⚠️ [Event ESP] No active events found to display ESP")
+        -- print("⚠️ [Event ESP] No active events found to display ESP")
         return
     end
     
@@ -1621,24 +1621,24 @@ function EventSystem:toggleESP(enabled)
                     local espObj = self:createESPText(eventName, zoneCoord.Position, distance)
                     table.insert(self.espObjects, espObj)
                     
-                    print("✨ [Event ESP] Added ESP for " .. eventName .. " at " .. zoneName .. " (" .. distance .. "m)")
+                    -- print("✨ [Event ESP] Added ESP for " .. eventName .. " at " .. zoneName .. " (" .. distance .. "m)")
                 end
             end
         end
     end
     
-    print("✅ [Event ESP] Enabled with " .. #self.espObjects .. " markers")
+    -- print("✅ [Event ESP] Enabled with " .. #self.espObjects .. " markers")
 end
 
 -- Function untuk teleport ke event terdekat
 function EventSystem:teleportToNearestEvent()
     if #self.activeEvents == 0 then
-        print("❌ [Event Teleport] No active events found!")
+        -- print("❌ [Event Teleport] No active events found!")
         return
     end
     
     if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then
-        print("❌ [Event Teleport] Character not found!")
+        -- print("❌ [Event Teleport] Character not found!")
         return
     end
     
@@ -1669,9 +1669,9 @@ function EventSystem:teleportToNearestEvent()
     if nearestEvent and nearestZone then
         local targetCoord = ZONE_COORDS[nearestZone]
         lp.Character.HumanoidRootPart.CFrame = targetCoord
-        print("🚀 [Event Teleport] Teleported to " .. nearestEvent .. " at " .. nearestZone .. " (" .. math.floor(nearestDistance) .. "m)")
+        -- print("🚀 [Event Teleport] Teleported to " .. nearestEvent .. " at " .. nearestZone .. " (" .. math.floor(nearestDistance) .. "m)")
     else
-        print("❌ [Event Teleport] No valid event location found!")
+        -- print("❌ [Event Teleport] No valid event location found!")
     end
 end
 
@@ -1722,19 +1722,19 @@ if EventTab then
         EventSystem:scanActiveEvents()
         
         if #EventSystem.activeEvents > 0 then
-            print("🎯 [Event Scanner] Active Events Found:")
+            -- print("🎯 [Event Scanner] Active Events Found:")
             for i, eventName in pairs(EventSystem.activeEvents) do
-                print("  " .. i .. ". " .. eventName)
+                -- print("  " .. i .. ". " .. eventName)
             end
         else
-            print("❌ [Event Scanner] No active events detected")
+            -- print("❌ [Event Scanner] No active events detected")
         end
     end)
     
     EventESPSection:NewButton("🎮 Demo ESP", "Add demo events for testing ESP", function()
         -- Add demo events untuk testing
         EventSystem.activeEvents = {"Fish Abundance", "Shark Hunt", "Whirlpool", "Lucky Pool"}
-        print("🎮 [Demo Mode] Added demo events for ESP testing")
+        -- print("🎮 [Demo Mode] Added demo events for ESP testing")
         
         -- Auto enable ESP
         if flags['eventesp'] then
@@ -1761,9 +1761,9 @@ if EventTab then
                 local targetCoord = ZONE_COORDS[targetZone]
                 if targetCoord and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                     lp.Character.HumanoidRootPart.CFrame = targetCoord
-                    print("🚀 [Manual Teleport] Teleported to " .. eventName .. " at " .. targetZone)
+                    -- print("🚀 [Manual Teleport] Teleported to " .. eventName .. " at " .. targetZone)
                 else
-                    print("❌ [Manual Teleport] Invalid location for " .. eventName)
+                    -- print("❌ [Manual Teleport] Invalid location for " .. eventName)
                 end
             end
         end)
@@ -1771,15 +1771,15 @@ if EventTab then
     
     local EventInfoSection = EventTab:NewSection("Event Information")
     EventInfoSection:NewButton("📊 Show Event List", "Display all trackable events", function()
-        print("📋 [Event System] Trackable Events:")
+        -- print("📋 [Event System] Trackable Events:")
         for eventName, eventData in pairs(EVENTS_DATA) do
             local zones = table.concat(eventData.zones, ", ")
-            print("  🎯 " .. eventName .. " -> " .. zones)
+            -- print("  🎯 " .. eventName .. " -> " .. zones)
         end
     end)
 end
 
-print("✅ [Event System] Event Zone ESP & Teleport system initialized!")
+-- print("✅ [Event System] Event Zone ESP & Teleport system initialized!")
 
 -- Automation Section
 local AutoSection = AutoTab:NewSection("Autofarm")
@@ -1799,11 +1799,11 @@ end)
 CastSection:NewToggle("Instant Bobber", "🚫 No animation, bobber drops close (works with AutoCast)", function(state)
     flags['instantbobber'] = state
     if state then
-        print("⚡ [Instant Bobber] Activated - No casting animation!")
-        print("📍 [Instant Bobber] Bobber will drop close to player")
-        print("🌊 [Instant Bobber] Can penetrate solid objects to reach water!")
+        -- print("⚡ [Instant Bobber] Activated - No casting animation!")
+        -- print("📍 [Instant Bobber] Bobber will drop close to player")
+        -- print("🌊 [Instant Bobber] Can penetrate solid objects to reach water!")
     else
-        print("🎣 [Instant Bobber] Deactivated - Normal casting animation")
+        -- print("🎣 [Instant Bobber] Deactivated - Normal casting animation")
     end
 end)
 
@@ -1811,18 +1811,18 @@ end)
 CastSection:NewToggle("Enhanced Instant Bobber", "🌊 Penetrates solid objects & drops directly in water", function(state)
     flags['enhancedinstantbobber'] = state
     if state then
-        print("🌊 [Enhanced Instant Bobber] Activated - PENETRATES solid objects!")
-        print("⚡ [Enhanced Instant Bobber] Bobber goes directly to water!")
-        print("🚀 [Enhanced Instant Bobber] Uses negative distance for penetration!")
+        -- print("🌊 [Enhanced Instant Bobber] Activated - PENETRATES solid objects!")
+        -- print("⚡ [Enhanced Instant Bobber] Bobber goes directly to water!")
+        -- print("🚀 [Enhanced Instant Bobber] Uses negative distance for penetration!")
     else
-        print("🎣 [Enhanced Instant Bobber] Deactivated - Normal bobber physics")
+        -- print("🎣 [Enhanced Instant Bobber] Deactivated - Normal bobber physics")
     end
 end)
 
 -- Fix slider issue - properly define default value with initial state
 local castSlider = CastSection:NewSlider("Auto Cast Delay", "Delay between auto casts (seconds)", 0.1, 5, function(value)
     flags['autocastdelay'] = value
-    print("[Auto Cast] Delay set to: " .. value .. " seconds")
+    -- print("[Auto Cast] Delay set to: " .. value .. " seconds")
 end)
 
 -- Set initial slider value to match default
@@ -1851,16 +1851,16 @@ ReelSection:NewToggle("Super Instant Reel", "⚡ ZERO ANIMATION - Instantly catc
     if state then
         flags['autoreel'] = false -- Disable normal auto reel if super instant enabled
         flags['alwayscatch'] = false -- Disable always catch to prevent conflicts
-        print("🚀 [Super Instant Reel] ACTIVATED - Maximum Speed!")
+        -- print("🚀 [Super Instant Reel] ACTIVATED - Maximum Speed!")
     else
-        print("⏸️ [Super Instant Reel] Deactivated")
+        -- print("⏸️ [Super Instant Reel] Deactivated")
     end
 end)
 
 -- Fix slider issue - properly define default value with initial state
 local reelSlider = ReelSection:NewSlider("Auto Reel Delay", "Delay between auto reels (seconds)", 0.1, 5, function(value)
     flags['autoreeldelay'] = value
-    print("[Auto Reel] Delay set to: " .. value .. " seconds")
+    -- print("[Auto Reel] Delay set to: " .. value .. " seconds")
 end)
 
 -- Set initial slider value to match default
@@ -1903,9 +1903,9 @@ end)
 ClientSection:NewToggle("Skip Fish Cutscenes", "🎬 Skip all fish capture cutscenes (Boss/Legendary)", function(state)
     flags['skipcutscenes'] = state
     if state then
-        print("🎬 [Skip Cutscenes] Activated - All fish capture cutscenes will be skipped!")
+        -- print("🎬 [Skip Cutscenes] Activated - All fish capture cutscenes will be skipped!")
     else
-        print("📽️ [Skip Cutscenes] Deactivated - Normal cutscenes will play")
+        -- print("📽️ [Skip Cutscenes] Deactivated - Normal cutscenes will play")
     end
 end)
 
@@ -1914,36 +1914,36 @@ local AnimationSection = ModTab:NewSection("🎭 Animation Control")
 AnimationSection:NewToggle("Disable All Animations", "🚫 Block all fishing animations and effects", function(state)
     flags['disableanimations'] = state
     if state then
-        print("🚫 [Disable Animations] Activated - ALL fishing animations blocked!")
+        -- print("🚫 [Disable Animations] Activated - ALL fishing animations blocked!")
     else
-        print("🎭 [Disable Animations] Deactivated - Normal animations restored")
+        -- print("🎭 [Disable Animations] Deactivated - Normal animations restored")
     end
 end)
 
 AnimationSection:NewToggle("Block Rod Wave", "🌊 Stop rod wave animation effects", function(state)
     flags['blockrodwave'] = state
     if state then
-        print("🌊 [Block Rod Wave] Activated - Rod wave effects disabled!")
+        -- print("🌊 [Block Rod Wave] Activated - Rod wave effects disabled!")
     else
-        print("🌊 [Block Rod Wave] Deactivated - Rod wave effects enabled")
+        -- print("🌊 [Block Rod Wave] Deactivated - Rod wave effects enabled")
     end
 end)
 
 AnimationSection:NewToggle("Block Shake Effects", "📳 Stop screen shake effects", function(state)
     flags['blockshakeeffects'] = state
     if state then
-        print("📳 [Block Shake Effects] Activated - Screen shake disabled!")
+        -- print("📳 [Block Shake Effects] Activated - Screen shake disabled!")
     else
-        print("📳 [Block Shake Effects] Deactivated - Screen shake enabled")
+        -- print("📳 [Block Shake Effects] Deactivated - Screen shake enabled")
     end
 end)
 
 AnimationSection:NewToggle("Block Exalted Rod Anim", "✨ Stop special rod animations (Exalted, etc.)", function(state)
     flags['blockexaltedanim'] = state
     if state then
-        print("✨ [Block Exalted Anim] Activated - Special rod animations disabled!")
+        -- print("✨ [Block Exalted Anim] Activated - Special rod animations disabled!")
     else
-        print("✨ [Block Exalted Anim] Deactivated - Special rod animations enabled")
+        -- print("✨ [Block Exalted Anim] Deactivated - Special rod animations enabled")
     end
 end)
 
@@ -2040,10 +2040,10 @@ PlayerSection:NewToggle("Player ESP", "👥 Show all players with distance and n
     flags['playeresp'] = state
     if state then
         createPlayerESP()
-        print("👥 [Player ESP] Activated - Showing all players!")
+        -- print("👥 [Player ESP] Activated - Showing all players!")
     else
         clearPlayerESP()
-        print("👥 [Player ESP] Deactivated")
+        -- print("👥 [Player ESP] Deactivated")
     end
 end)
 PlayerSection:NewDropdown("ESP Color", "Select player ESP color", {"Red", "Green", "Blue", "Yellow", "Purple", "Orange", "White"}, function(currentOption)
@@ -2256,11 +2256,11 @@ RunService.Heartbeat:Connect(function()
             if flags['enhancedinstantbobber'] then
                 -- ENHANCED INSTANT BOBBER: Penetrates solid objects, drops directly in water
                 rod.events.cast:FireServer(-50, 1) -- Negative distance = penetrate objects to reach water
-                print("🌊 [Enhanced Instant Bobber] Cast through solid objects to water!")
+                -- print("🌊 [Enhanced Instant Bobber] Cast through solid objects to water!")
             elseif flags['instantbobber'] then
                 -- INSTANT BOBBER: No animation, close drop
                 rod.events.cast:FireServer(0, 1) -- Distance 0 = instant drop near player
-                print("⚡ [Instant Bobber] Cast with no animation!")
+                -- print("⚡ [Instant Bobber] Cast with no animation!")
             else
                 -- NORMAL CAST: Full animation, far distance
                 rod.events.cast:FireServer(100, 1) -- Distance 100 = normal cast
@@ -2308,7 +2308,7 @@ RunService.Heartbeat:Connect(function()
                         end
                     end
                     
-                    print("⚡ [ZERO-ANIMATION] Lure:" .. lureValue .. "% - INSTANT CATCH!")
+                    -- print("⚡ [ZERO-ANIMATION] Lure:" .. lureValue .. "% - INSTANT CATCH!")
                 end)
             end
         end
@@ -2529,13 +2529,13 @@ if CheckFunc(hookmetamethod) then
             -- ENHANCED INSTANT BOBBER HOOK: Override manual casting untuk penetrate objects
             args[1] = -50  -- Negative distance untuk penetrate solid objects ke air
             args[2] = 1    -- Keep force parameter
-            print("🌊 [Enhanced Instant Bobber Hook] Manual cast penetrates objects to water!")
+            -- print("🌊 [Enhanced Instant Bobber Hook] Manual cast penetrates objects to water!")
             return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'cast' and flags['instantbobber'] then
             -- INSTANT BOBBER HOOK: Override manual casting untuk instant drop
             args[1] = 0  -- Distance 0 untuk instant bobber
             args[2] = 1  -- Keep power at 1
-            print("⚡ [Instant Bobber Hook] Manual cast converted to instant!")
+            -- print("⚡ [Instant Bobber Hook] Manual cast converted to instant!")
             return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'reelfinished' and flags['alwayscatch'] then
             args[1] = 100
@@ -2557,14 +2557,14 @@ if CheckFunc(hookmetamethod) then
             
             -- Check if remote name contains cutscene keywords
             if remoteName:lower():find("cutscene") or remoteName:find("Capture") or remoteName:find("Intro") then
-                print("🎬 [Skip Cutscenes] Blocked cutscene remote: " .. remoteName)
+                -- print("🎬 [Skip Cutscenes] Blocked cutscene remote: " .. remoteName)
                 return -- Block the cutscene call completely
             end
             
             -- Check specific fish capture cutscenes
             for _, cutscene in pairs(cutsceneRemotes) do
                 if remoteName:find(cutscene) then
-                    print("🎬 [Skip Cutscenes] Blocked " .. cutscene .. " cutscene!")
+                    -- print("🎬 [Skip Cutscenes] Blocked " .. cutscene .. " cutscene!")
                     return -- Block the specific cutscene
                 end
             end
@@ -2585,7 +2585,7 @@ if CheckFunc(hookmetamethod) then
                         if guiName:find("cutscene") or guiName:find("capture") or 
                            guiName:find("intro") or guiName:find("ending") then
                             gui:Destroy()
-                            print("🎬 [Skip Cutscenes] Destroyed cutscene GUI: " .. gui.Name)
+                            -- print("🎬 [Skip Cutscenes] Destroyed cutscene GUI: " .. gui.Name)
                         end
                         
                         -- Check for specific boss cutscene GUIs
@@ -2598,7 +2598,7 @@ if CheckFunc(hookmetamethod) then
                             if guiName:find(cutsceneGUI) and 
                                (guiName:find("capture") or guiName:find("cutscene")) then
                                 gui:Destroy()
-                                print("🎬 [Skip Cutscenes] Destroyed " .. cutsceneGUI .. " cutscene GUI!")
+                                -- print("🎬 [Skip Cutscenes] Destroyed " .. cutsceneGUI .. " cutscene GUI!")
                             end
                         end
                     end
@@ -2622,7 +2622,7 @@ if CheckFunc(hookmetamethod) then
                 
                 for _, blockedAnim in pairs(blockedAnimations) do
                     if remoteName:find(blockedAnim) then
-                        print("🚫 [Disable Animations] Blocked: " .. blockedAnim)
+                        -- print("🚫 [Disable Animations] Blocked: " .. blockedAnim)
                         return -- Block the animation
                     end
                 end
@@ -2637,7 +2637,7 @@ if CheckFunc(hookmetamethod) then
                 if ReplicatedStorage.events:FindFirstChild("rodwave") then
                     local originalRodWave = ReplicatedStorage.events.rodwave.FireServer
                     ReplicatedStorage.events.rodwave.FireServer = function(...)
-                        print("🌊 [Block Rod Wave] Blocked rod wave animation!")
+                        -- print("🌊 [Block Rod Wave] Blocked rod wave animation!")
                         return -- Block rod wave
                     end
                 end
@@ -2650,7 +2650,7 @@ if CheckFunc(hookmetamethod) then
                 if ReplicatedStorage.events:FindFirstChild("shakehudeffect") then
                     local originalShake = ReplicatedStorage.events.shakehudeffect.FireServer
                     ReplicatedStorage.events.shakehudeffect.FireServer = function(...)
-                        print("📳 [Block Shake Effects] Blocked screen shake!")
+                        -- print("📳 [Block Shake Effects] Blocked screen shake!")
                         return -- Block shake effects
                     end
                 end
@@ -2667,7 +2667,7 @@ if CheckFunc(hookmetamethod) then
                         if shakeButton:FindFirstChild("shake") then
                             local originalShakeUI = shakeButton.shake.FireServer
                             shakeButton.shake.FireServer = function(...)
-                                print("📳 [Block Shake Effects] Blocked shake UI!")
+                                -- print("📳 [Block Shake Effects] Blocked shake UI!")
                                 return -- Block shake UI
                             end
                         end
@@ -2682,7 +2682,7 @@ if CheckFunc(hookmetamethod) then
                 if ReplicatedStorage.events:FindFirstChild("exalted_rod_animation") then
                     local originalExalted = ReplicatedStorage.events.exalted_rod_animation.FireServer
                     ReplicatedStorage.events.exalted_rod_animation.FireServer = function(...)
-                        print("✨ [Block Exalted Anim] Blocked special rod animation!")
+                        -- print("✨ [Block Exalted Anim] Blocked special rod animation!")
                         return -- Block exalted rod animation
                     end
                 end
@@ -2719,7 +2719,7 @@ if flags then
                         end)
                     end)
                     
-                    print("🚀 [FRAME-PERFECT] Heartbeat instant catch - ABSOLUTE ZERO DELAY!")
+                    -- print("🚀 [FRAME-PERFECT] Heartbeat instant catch - ABSOLUTE ZERO DELAY!")
                 end
             end
         end
@@ -2739,7 +2739,7 @@ if flags then
                         pcall(function()
                             ReplicatedStorage.events.reelfinished:FireServer(100, true)
                         end)
-                        print("🎣 [Always Catch] Fish bite detected - auto catch!")
+                        -- print("🎣 [Always Catch] Fish bite detected - auto catch!")
                     end
                 end
             end
@@ -2773,7 +2773,7 @@ if flags then
                             end
                         end)
                         
-                        print("⚡ [ZERO DELAY] BITE detected - MEGA INSTANT catch!")
+                        -- print("⚡ [ZERO DELAY] BITE detected - MEGA INSTANT catch!")
                         -- NO delay at all - continue checking immediately
                     end
                 end
@@ -2795,7 +2795,7 @@ if flags then
                         for _, blockedName in pairs(blockedGUINames) do
                             if guiName:find(blockedName) then
                                 gui:Destroy()
-                                print("🚫 [Animation Block] Destroyed GUI: " .. gui.Name)
+                                -- print("🚫 [Animation Block] Destroyed GUI: " .. gui.Name)
                             end
                         end
                     end
@@ -2828,7 +2828,7 @@ if flags then
                             ReplicatedStorage.events.reelfinished:FireServer(100, true)
                         end
                         
-                        print("⚡ [INSTANT DESTROY] Reel GUI eliminated!")
+                        -- print("⚡ [INSTANT DESTROY] Reel GUI eliminated!")
                     end
                 end)
             end
@@ -2850,7 +2850,7 @@ if flags then
                     end)
                 end
                 
-                print("💀 [GUI INTERCEPTOR] Destroyed " .. gui.Name .. " instantly on spawn!")
+                -- print("💀 [GUI INTERCEPTOR] Destroyed " .. gui.Name .. " instantly on spawn!")
             end
         end
     end)
@@ -2868,7 +2868,7 @@ if flags then
                             for i = 1, 5 do
                                 ReplicatedStorage.events.reelfinished:FireServer(100, true)
                             end
-                            print("🔥 [PREEMPTIVE] Destroyed " .. gui.Name .. " ultra-fast!")
+                            -- print("🔥 [PREEMPTIVE] Destroyed " .. gui.Name .. " ultra-fast!")
                         end
                     end
                 end)
@@ -2969,12 +2969,12 @@ end
 - Force GUI disable for instant completion
 --]]
 
-print("🎣 Enhanced Fisch Script with ULTIMATE Super Instant Reel + Instant Bobber + Skip Cutscenes loaded successfully!")
-print("🚀 ULTIMATE Super Instant Reel: Ready for MAXIMUM fishing speed!")
-print("🎬 Skip Cutscenes: No more interruptions from boss fish captures!")
-print("👁️ Clean ESP System: Text-only Event & Player ESP with customizable colors!")
-print("⚡ INFO: When features are enabled, fishing becomes completely seamless and ultra-fast!")
-print("🔥 This is the FASTEST and most UNINTERRUPTED fishing system in Fisch!")
+-- print("🎣 Enhanced Fisch Script with ULTIMATE Super Instant Reel + Instant Bobber + Skip Cutscenes loaded successfully!")
+-- print("🚀 ULTIMATE Super Instant Reel: Ready for MAXIMUM fishing speed!")
+-- print("🎬 Skip Cutscenes: No more interruptions from boss fish captures!")
+-- print("👁️ Clean ESP System: Text-only Event & Player ESP with customizable colors!")
+-- print("⚡ INFO: When features are enabled, fishing becomes completely seamless and ultra-fast!")
+-- print("🔥 This is the FASTEST and most UNINTERRUPTED fishing system in Fisch!")
 
 -- ULTIMATE HOOK SYSTEM - Blocks reel GUI creation entirely
 local originalInstanceNew = Instance.new
@@ -2995,7 +2995,7 @@ Instance.new = function(className, ...)
                     end)
                 end
                 
-                print("🚫 [ULTIMATE BLOCK] Reel GUI blocked - INSTANT COMPLETION!")
+                -- print("🚫 [ULTIMATE BLOCK] Reel GUI blocked - INSTANT COMPLETION!")
             end
         end)
     end
@@ -3014,7 +3014,7 @@ task.spawn(function()
                     if child.Name == "reel" or (child:IsA("ScreenGui") and child:FindFirstChild("reel")) then
                         child:Destroy()
                         ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                        print("🗑️ [FINAL SAFETY] Eliminated reel GUI!")
+                        -- print("🗑️ [FINAL SAFETY] Eliminated reel GUI!")
                     end
                 end
             end)
@@ -3022,6 +3022,6 @@ task.spawn(function()
     end
 end)
 
-print("✅ [ULTIMATE SYSTEM] All hook systems activated!")
-print("🎯 [READY] ULTIMATE Super Instant Reel system fully operational!")
-print("🚀 [SPEED] Fish will be caught INSTANTLY with ZERO animation when enabled!")
+-- print("✅ [ULTIMATE SYSTEM] All hook systems activated!")
+-- print("🎯 [READY] ULTIMATE Super Instant Reel system fully operational!")
+-- print("🚀 [SPEED] Fish will be caught INSTANTLY with ZERO animation when enabled!")
