@@ -39,40 +39,66 @@ flags['autoreeldelay'] = 0.5
 flags['superinstantreel'] = false
 flags['instantbobber'] = false
 local superInstantReelActive = false
+local lureMonitorConnection = nil
 
--- Super Instant Reel GUI Monitoring System
-local function setupSuperInstantReel()
+-- ULTIMATE Super Instant Reel System (TRUE INSTANT - NO ANIMATION)
+local function setupUltimateSuperInstantReel()
     if not superInstantReelActive then
         superInstantReelActive = true
         
-        -- Monitor for reel GUI appearance
-        local playerGui = lp.PlayerGui
-        playerGui.ChildAdded:Connect(function(gui)
-            if flags['superinstantreel'] and gui.Name == "reel" then
-                -- SUPER INSTANT: No waiting at all!
+        -- Method 1: Monitor lure value directly (INSTANT detection)
+        lureMonitorConnection = RunService.Heartbeat:Connect(function()
+            if flags['superinstantreel'] then
                 pcall(function()
-                    -- Immediately fire reel completion
-                    ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                    
-                    -- Force disable the GUI
-                    gui.Enabled = false
-                    
-                    -- Additional rapid calls for maximum effectiveness
-                    for i = 1, 5 do
-                        ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                    local rod = FindRod()
+                    if rod and rod.values and rod.values.lure then
+                        -- INSTANT catch when lure reaches 100% (no delay at all!)
+                        if rod.values.lure.Value >= 100 then
+                            -- IMMEDIATE fire - no waiting for GUI!
+                            ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                            
+                            -- Force destroy any reel GUI instantly
+                            if lp.PlayerGui:FindFirstChild("reel") then
+                                lp.PlayerGui.reel:Destroy()
+                            end
+                            
+                            print("⚡ [ULTIMATE INSTANT] Fish caught at 100% lure - NO ANIMATION!")
+                        end
+                        
+                        -- Also catch at 99.9% for extra safety
+                        if rod.values.lure.Value >= 99.9 and rod.values.lure.Value < 100 then
+                            ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                            print("⚡ [ULTRA FAST] Fish caught at 99.9% - INSTANT!")
+                        end
                     end
-                    
-                    print("🚀 [Super Instant Reel] Fish caught INSTANTLY!")
                 end)
             end
         end)
         
-        print("✅ [Super Instant Reel] Monitoring system activated!")
+        -- Method 2: GUI intercept and instant destroy
+        local playerGui = lp.PlayerGui
+        playerGui.ChildAdded:Connect(function(gui)
+            if flags['superinstantreel'] and gui.Name == "reel" then
+                pcall(function()
+                    -- IMMEDIATE destruction - don't even let the GUI show!
+                    gui:Destroy()
+                    
+                    -- Triple fire for absolute certainty
+                    for i = 1, 3 do
+                        ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                    end
+                    
+                    print("🚀 [GUI INTERCEPTED] Reel GUI destroyed instantly!")
+                end)
+            end
+        end)
+        
+        print("✅ [ULTIMATE INSTANT REEL] Maximum speed system activated!")
     end
 end
 
 -- Call setup function
-setupSuperInstantReel()
+setupUltimateSuperInstantReel()
 
 local TeleportLocations = {
     ['Zones'] = {
@@ -2147,45 +2173,72 @@ if CheckFunc(hookmetamethod) then
     end)
 end
 
--- Additional Always Catch implementation
+-- ULTIMATE Always Catch + Super Instant Reel Combined System
 if flags then
-    -- Enhanced Always Catch using different approach
+    -- Triple-layer instant catch system for maximum speed
     task.spawn(function()
         while true do
-            task.wait(0.1)
+            task.wait(0.01) -- Ultra-fast checking every 10ms
+            
+            -- Always Catch Mode
             if flags['alwayscatch'] then
                 local rod = FindRod()
                 if rod and rod['values'] and rod['values']['lure'] then
-                    -- When fish bites (lure = 100), immediately catch it
-                    if rod['values']['lure'].Value >= 99.9 then
-                        task.wait(0.1) -- Small delay to ensure minigame starts
-                        
-                        -- Try multiple methods to catch the fish
+                    if rod['values']['lure'].Value >= 99.5 then
+                        -- Standard always catch
                         pcall(function()
-                            -- Method 1: Direct reelfinished call
                             ReplicatedStorage.events.reelfinished:FireServer(100, true)
                         end)
-                        
-                        pcall(function()
-                            -- Method 2: Check for reel GUI and auto-complete
-                            if lp.PlayerGui:FindFirstChild('reel') then
-                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                            end
-                        end)
-                        
-                        pcall(function()
-                            -- Method 3: Auto-complete any active minigame
-                            local reelGui = lp.PlayerGui:FindFirstChild('reel')
-                            if reelGui and reelGui.Enabled then
-                                -- Force complete the reel minigame
-                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                                reelGui.Enabled = false
-                            end
-                        end)
-                        
-                        task.wait(0.5) -- Wait before next check
                     end
                 end
+            end
+            
+            -- Super Instant Reel Mode (Even faster)
+            if flags['superinstantreel'] then
+                local rod = FindRod()
+                if rod and rod['values'] and rod['values']['lure'] then
+                    -- INSTANT catch at 99.8% or higher - no waiting!
+                    if rod['values']['lure'].Value >= 99.8 then
+                        -- Multi-fire for instant results
+                        for i = 1, 3 do
+                            pcall(function()
+                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                            end)
+                        end
+                        
+                        -- Immediately destroy any reel GUI
+                        pcall(function()
+                            if lp.PlayerGui:FindFirstChild('reel') then
+                                lp.PlayerGui.reel:Destroy()
+                            end
+                        end)
+                        
+                        task.wait(0.1) -- Small delay to prevent spam
+                    end
+                end
+            end
+        end
+    end)
+    
+    -- Separate thread for GUI monitoring and instant destruction
+    task.spawn(function()
+        while true do
+            task.wait(0.01)
+            if flags['superinstantreel'] then
+                pcall(function()
+                    local reelGui = lp.PlayerGui:FindFirstChild('reel')
+                    if reelGui then
+                        -- INSTANT destruction before it even shows
+                        reelGui:Destroy()
+                        
+                        -- Fire completion events immediately
+                        for i = 1, 2 do
+                            ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                        end
+                        
+                        print("⚡ [INSTANT DESTROY] Reel GUI eliminated!")
+                    end
+                end)
             end
         end
     end)
@@ -2238,7 +2291,57 @@ end
 - Force GUI disable for instant completion
 --]]
 
-print("🎣 Enhanced Fisch Script with Super Instant Reel + Instant Bobber loaded successfully!")
-print("🚀 Super Instant Reel: Ready for maximum fishing speed!")
-print("⚡ Instant Bobber: Ready for no-animation casting!")
-print("🎮 Toggle both features in Auto Cast/Reel Settings for ULTIMATE SPEED!")
+print("🎣 Enhanced Fisch Script with ULTIMATE Super Instant Reel + Instant Bobber loaded successfully!")
+print("🚀 ULTIMATE Super Instant Reel: Ready for MAXIMUM fishing speed!")
+print("⚡ INFO: When Super Instant Reel is enabled, fish will be caught INSTANTLY with NO animation!")
+print("🔥 This is the FASTEST possible fishing system in Fisch!")
+
+-- ULTIMATE HOOK SYSTEM - Blocks reel GUI creation entirely
+local originalInstanceNew = Instance.new
+Instance.new = function(className, ...)
+    local instance = originalInstanceNew(className, ...)
+    
+    -- Block reel GUI creation when Super Instant Reel is active
+    if flags['superinstantreel'] and className == "ScreenGui" and instance.Parent == lp.PlayerGui then
+        instance.ChildAdded:Connect(function(child)
+            if child.Name == "reel" or child.Name:lower():find("reel") then
+                -- INSTANTLY destroy and complete
+                child:Destroy()
+                
+                -- Triple fire for absolute completion
+                for i = 1, 3 do
+                    pcall(function()
+                        ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                    end)
+                end
+                
+                print("🚫 [ULTIMATE BLOCK] Reel GUI blocked - INSTANT COMPLETION!")
+            end
+        end)
+    end
+    
+    return instance
+end
+
+-- FINAL SAFETY NET - Continuous monitoring
+task.spawn(function()
+    while true do
+        task.wait(0.001) -- Ultra-fast monitoring every 1ms
+        if flags['superinstantreel'] then
+            pcall(function()
+                -- Check for any reel GUI that might have slipped through
+                for _, child in pairs(lp.PlayerGui:GetChildren()) do
+                    if child.Name == "reel" or (child:IsA("ScreenGui") and child:FindFirstChild("reel")) then
+                        child:Destroy()
+                        ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                        print("🗑️ [FINAL SAFETY] Eliminated reel GUI!")
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+print("✅ [ULTIMATE SYSTEM] All hook systems activated!")
+print("🎯 [READY] ULTIMATE Super Instant Reel system fully operational!")
+print("🚀 [SPEED] Fish will be caught INSTANTLY with ZERO animation when enabled!")
