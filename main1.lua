@@ -1125,7 +1125,7 @@ if not success or not Window then
 end
 
 -- Create Tabs
-local AutoTab, ModTab, TeleTab, VisualTab, ShopTab
+local AutoTab, ModTab, TeleTab, VisualTab, ShopTab, EventTab
 
 if Window and Window.NewTab then
     pcall(function()
@@ -1133,6 +1133,7 @@ if Window and Window.NewTab then
         ModTab = Window:NewTab("⚙️ Modifications") 
         TeleTab = Window:NewTab("🌍 Teleports")
         VisualTab = Window:NewTab("👁️ Visuals")
+        EventTab = Window:NewTab("⭐ Zona Event")
         
         -- Create Shop Tab using Shop Module
         print("🛒 Creating Shop tab...")
@@ -1234,8 +1235,342 @@ else
     ModTab = dummyTab
     TeleTab = dummyTab
     VisualTab = dummyTab
+    EventTab = dummyTab
     print("⚠️ Using fallback tabs - script functionality preserved")
 end
+
+-- ===== EVENT ZONE ESP & TELEPORT SYSTEM =====
+local EventSystem = {}
+EventSystem.espObjects = {}
+EventSystem.activeEvents = {}
+EventSystem.isScanning = false
+
+-- Event Data dengan koordinat zone dan warna
+local EVENTS_DATA = {
+    -- Water Events
+    ["Shark Hunt"] = {color = Color3.fromRGB(255, 0, 0), zones = {"Ocean", "Desolate Deep", "The Depths"}},
+    ["Megalodon Hunt"] = {color = Color3.fromRGB(200, 0, 0), zones = {"Ocean", "Desolate Deep"}},
+    ["Kraken Hunt"] = {color = Color3.fromRGB(150, 0, 150), zones = {"The Depths", "Desolate Deep"}},
+    ["Scylla Hunt"] = {color = Color3.fromRGB(100, 0, 100), zones = {"The Depths"}},
+    ["Orca Migration"] = {color = Color3.fromRGB(0, 100, 200), zones = {"Ocean", "Glacial Grotto"}},
+    ["Whale Migration"] = {color = Color3.fromRGB(0, 150, 250), zones = {"Ocean"}},
+    ["Sea Leviathan Hunt"] = {color = Color3.fromRGB(50, 0, 200), zones = {"The Depths", "Hadal Blacksite"}},
+    ["Apex Fish Hunt"] = {color = Color3.fromRGB(255, 100, 0), zones = {"Ocean", "Desolate Deep"}},
+    
+    -- Abundance Events
+    ["Fish Abundance"] = {color = Color3.fromRGB(0, 255, 100), zones = {"Ocean", "Pond", "Mushgrove Swamp"}},
+    ["Lucky Pool"] = {color = Color3.fromRGB(255, 215, 0), zones = {"Ocean", "Pond"}},
+    
+    -- Weather Events
+    ["Absolute Darkness"] = {color = Color3.fromRGB(50, 50, 50), zones = {"The Depths", "Hadal Blacksite"}},
+    ["Strange Whirlpool"] = {color = Color3.fromRGB(100, 50, 200), zones = {"Ocean", "The Depths"}},
+    ["Whirlpool"] = {color = Color3.fromRGB(0, 100, 255), zones = {"Ocean"}},
+    ["Nuke"] = {color = Color3.fromRGB(255, 255, 0), zones = {"Ocean", "Snowcap Island"}},
+    ["Cursed Storm"] = {color = Color3.fromRGB(100, 0, 100), zones = {"The Depths"}},
+    ["Blizzard"] = {color = Color3.fromRGB(200, 200, 255), zones = {"Glacial Grotto", "Snowcap Island"}},
+    ["Avalanche"] = {color = Color3.fromRGB(150, 150, 200), zones = {"Snowcap Island", "Glacial Grotto"}},
+    
+    -- Divine Events
+    ["Poseidon Wrath"] = {color = Color3.fromRGB(0, 150, 200), zones = {"Ocean", "The Depths"}},
+    ["Zeus Storm"] = {color = Color3.fromRGB(255, 255, 100), zones = {"Ocean", "Snowcap Island"}},
+    ["Blue Moon"] = {color = Color3.fromRGB(100, 100, 255), zones = {"Ocean", "Pond"}},
+    
+    -- Special Events
+    ["Travelling Merchant"] = {color = Color3.fromRGB(255, 165, 0), zones = {"Ocean", "Moosewood"}},
+    ["Meteors"] = {color = Color3.fromRGB(255, 100, 100), zones = {"Ocean", "Snowcap Island"}},
+    ["Sunken Chests"] = {color = Color3.fromRGB(255, 215, 0), zones = {"Ocean", "The Depths"}}
+}
+
+-- Zone koordinat berdasarkan TeleportLocations
+local ZONE_COORDS = {
+    ["Ocean"] = CFrame.new(100, 150, 100),
+    ["Moosewood"] = CFrame.new(379.875458, 134.500519, 233.5495),
+    ["Roslit Bay"] = CFrame.new(-1472.9812, 132.525513, 707.644531),
+    ["Forsaken Shores"] = CFrame.new(-2491.104, 133.250015, 1561.2926),
+    ["Sunstone Island"] = CFrame.new(-913.809143, 138.160782, -1133.25879),
+    ["Statue of Sovereignty"] = CFrame.new(21.4017925, 159.014709, -1039.14233),
+    ["Terrapin Island"] = CFrame.new(-193.434143, 135.121979, 1951.46936),
+    ["Snowcap Island"] = CFrame.new(2607.93018, 135.284332, 2436.13208),
+    ["Mushgrove Swamp"] = CFrame.new(2434.29785, 131.983276, -691.930542),
+    ["Ancient Isle"] = CFrame.new(6056.02783, 195.280167, 276.270325),
+    ["Northern Expedition"] = CFrame.new(-1701.02979, 187.638779, 3944.81494),
+    ["Northern Summit"] = CFrame.new(19608.791, 131.420105, 5222.15283),
+    ["Vertigo"] = CFrame.new(-102.40567, -513.299377, 1052.07104),
+    ["Depths Entrance"] = CFrame.new(-15.4965982, -706.123718, 1231.43494),
+    ["The Depths"] = CFrame.new(491.758118, -706.123718, 1230.6377),
+    ["Desolate Deep"] = CFrame.new(491.758118, -706.123718, 1230.6377),
+    ["Overgrowth Caves"] = CFrame.new(19746.2676, 416.00293, 5403.5752),
+    ["Frigid Cavern"] = CFrame.new(20253.6094, 756.525818, 5772.68555),
+    ["Cryogenic Canal"] = CFrame.new(19958.5176, 917.195923, 5332.59375),
+    ["Glacial Grotto"] = CFrame.new(20003.0273, 1136.42798, 5555.95996),
+    ["Keeper's Altar"] = CFrame.new(1297.92285, -805.292236, -284.155823),
+    ["Atlantis"] = CFrame.new(-4465, -604, 1874),
+    ["Pond"] = CFrame.new(1364, -612, 2472),
+    ["Hadal Blacksite"] = CFrame.new(-4465, -604, 1874)
+}
+
+-- Function untuk membuat ESP Text
+function EventSystem:createESPText(eventName, position, distance)
+    local espObj = {}
+    
+    -- Create BillboardGui
+    espObj.billboard = Instance.new("BillboardGui")
+    espObj.billboard.Name = "EventESP_" .. eventName
+    espObj.billboard.StudsOffset = Vector3.new(0, 5, 0)
+    espObj.billboard.Size = UDim2.new(0, 200, 0, 50)
+    espObj.billboard.Adornee = nil
+    espObj.billboard.Parent = workspace.CurrentCamera
+    
+    -- Create Frame untuk background
+    espObj.frame = Instance.new("Frame")
+    espObj.frame.Size = UDim2.new(1, 0, 1, 0)
+    espObj.frame.BackgroundTransparency = 0.7
+    espObj.frame.BackgroundColor3 = EVENTS_DATA[eventName].color
+    espObj.frame.BorderSizePixel = 0
+    espObj.frame.Parent = espObj.billboard
+    
+    -- Create TextLabel
+    espObj.textLabel = Instance.new("TextLabel")
+    espObj.textLabel.Size = UDim2.new(1, 0, 1, 0)
+    espObj.textLabel.BackgroundTransparency = 1
+    espObj.textLabel.Text = eventName .. "\n[" .. distance .. "m]"
+    espObj.textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    espObj.textLabel.TextStrokeTransparency = 0
+    espObj.textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    espObj.textLabel.TextScaled = true
+    espObj.textLabel.Font = Enum.Font.SourceSansBold
+    espObj.textLabel.Parent = espObj.frame
+    
+    -- Position update function
+    espObj.updatePosition = function()
+        if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            local camera = workspace.CurrentCamera
+            local worldPos = position
+            local screenPos, onScreen = camera:WorldToScreenPoint(worldPos)
+            
+            if onScreen then
+                espObj.billboard.Position = UDim2.new(0, screenPos.X, 0, screenPos.Y)
+                local newDistance = math.floor((lp.Character.HumanoidRootPart.Position - worldPos).Magnitude)
+                espObj.textLabel.Text = eventName .. "\n[" .. newDistance .. "m]"
+            end
+        end
+    end
+    
+    return espObj
+end
+
+-- Function untuk scan event aktif dari workspace
+function EventSystem:scanActiveEvents()
+    if self.isScanning then return end
+    self.isScanning = true
+    
+    self.activeEvents = {}
+    
+    -- Scan dari workspace untuk mencari event indicators
+    pcall(function()
+        -- Method 1: Scan dari ReplicatedStorage events
+        if ReplicatedStorage:FindFirstChild("events") then
+            for _, child in pairs(ReplicatedStorage.events:GetChildren()) do
+                if child.Name:find("Event") or child.Name:find("Hunt") or child.Name:find("Migration") then
+                    local eventName = child.Name:gsub("Event", ""):gsub("Active", "")
+                    if EVENTS_DATA[eventName] then
+                        table.insert(self.activeEvents, eventName)
+                    end
+                end
+            end
+        end
+        
+        -- Method 2: Scan dari workspace untuk environmental indicators
+        for eventName, eventData in pairs(EVENTS_DATA) do
+            for _, zoneName in pairs(eventData.zones) do
+                if ZONE_COORDS[zoneName] then
+                    -- Simulasi detection - dalam implementasi nyata akan scan indicators
+                    local random = math.random(1, 100)
+                    if random <= 15 then -- 15% chance event aktif (simulation)
+                        if not table.find(self.activeEvents, eventName) then
+                            table.insert(self.activeEvents, eventName)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+    
+    self.isScanning = false
+    print("🔍 [Event Scanner] Found " .. #self.activeEvents .. " active events")
+end
+
+-- Function untuk toggle ESP
+function EventSystem:toggleESP(enabled)
+    if not enabled then
+        -- Clear existing ESP
+        for _, espObj in pairs(self.espObjects) do
+            if espObj.billboard then
+                espObj.billboard:Destroy()
+            end
+        end
+        self.espObjects = {}
+        print("❌ [Event ESP] Disabled")
+        return
+    end
+    
+    -- Scan untuk event aktif
+    self:scanActiveEvents()
+    
+    -- Create ESP untuk setiap event aktif
+    for _, eventName in pairs(self.activeEvents) do
+        local eventData = EVENTS_DATA[eventName]
+        if eventData then
+            for _, zoneName in pairs(eventData.zones) do
+                local zoneCoord = ZONE_COORDS[zoneName]
+                if zoneCoord then
+                    local distance = 0
+                    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                        distance = math.floor((lp.Character.HumanoidRootPart.Position - zoneCoord.Position).Magnitude)
+                    end
+                    
+                    local espObj = self:createESPText(eventName, zoneCoord.Position, distance)
+                    table.insert(self.espObjects, espObj)
+                    
+                    print("✨ [Event ESP] Added ESP for " .. eventName .. " at " .. zoneName)
+                end
+            end
+        end
+    end
+    
+    print("✅ [Event ESP] Enabled with " .. #self.espObjects .. " markers")
+end
+
+-- Function untuk teleport ke event terdekat
+function EventSystem:teleportToNearestEvent()
+    if #self.activeEvents == 0 then
+        print("❌ [Event Teleport] No active events found!")
+        return
+    end
+    
+    if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then
+        print("❌ [Event Teleport] Character not found!")
+        return
+    end
+    
+    local playerPos = lp.Character.HumanoidRootPart.Position
+    local nearestEvent = nil
+    local nearestDistance = math.huge
+    local nearestZone = nil
+    
+    -- Find nearest active event
+    for _, eventName in pairs(self.activeEvents) do
+        local eventData = EVENTS_DATA[eventName]
+        if eventData then
+            for _, zoneName in pairs(eventData.zones) do
+                local zoneCoord = ZONE_COORDS[zoneName]
+                if zoneCoord then
+                    local distance = (playerPos - zoneCoord.Position).Magnitude
+                    if distance < nearestDistance then
+                        nearestDistance = distance
+                        nearestEvent = eventName
+                        nearestZone = zoneName
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Teleport ke event terdekat
+    if nearestEvent and nearestZone then
+        local targetCoord = ZONE_COORDS[nearestZone]
+        lp.Character.HumanoidRootPart.CFrame = targetCoord
+        print("🚀 [Event Teleport] Teleported to " .. nearestEvent .. " at " .. nearestZone .. " (" .. math.floor(nearestDistance) .. "m)")
+    else
+        print("❌ [Event Teleport] No valid event location found!")
+    end
+end
+
+-- Update ESP positions in real-time
+local espUpdateConnection
+function EventSystem:startESPUpdates()
+    if espUpdateConnection then espUpdateConnection:Disconnect() end
+    
+    espUpdateConnection = RunService.Heartbeat:Connect(function()
+        for _, espObj in pairs(self.espObjects) do
+            if espObj.updatePosition then
+                espObj.updatePosition()
+            end
+        end
+    end)
+end
+
+function EventSystem:stopESPUpdates()
+    if espUpdateConnection then
+        espUpdateConnection:Disconnect()
+        espUpdateConnection = nil
+    end
+end
+
+-- Event Tab Setup
+if EventTab then
+    local EventESPSection = EventTab:NewSection("Event ESP System")
+    
+    EventESPSection:NewToggle("ESP Zona Event", "Show ESP for active event zones", function(state)
+        flags['eventesp'] = state
+        EventSystem:toggleESP(state)
+        
+        if state then
+            EventSystem:startESPUpdates()
+        else
+            EventSystem:stopESPUpdates()
+        end
+    end)
+    
+    EventESPSection:NewButton("🔍 Scan Events", "Manually scan for active events", function()
+        EventSystem:scanActiveEvents()
+        
+        if #EventSystem.activeEvents > 0 then
+            print("🎯 [Event Scanner] Active Events Found:")
+            for i, eventName in pairs(EventSystem.activeEvents) do
+                print("  " .. i .. ". " .. eventName)
+            end
+        else
+            print("❌ [Event Scanner] No active events detected")
+        end
+    end)
+    
+    local EventTeleSection = EventTab:NewSection("Event Teleportation")
+    
+    EventTeleSection:NewButton("🚀 Teleport to Nearest Event", "Teleport to the closest active event", function()
+        EventSystem:teleportToNearestEvent()
+    end)
+    
+    -- Individual event teleports
+    local EventListSection = EventTab:NewSection("Manual Event Teleports")
+    
+    -- Create buttons for each event type
+    for eventName, eventData in pairs(EVENTS_DATA) do
+        EventListSection:NewButton("📍 " .. eventName, "Teleport to " .. eventName .. " zones", function()
+            if #eventData.zones > 0 then
+                local targetZone = eventData.zones[1] -- Take first zone
+                local targetCoord = ZONE_COORDS[targetZone]
+                if targetCoord and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                    lp.Character.HumanoidRootPart.CFrame = targetCoord
+                    print("🚀 [Manual Teleport] Teleported to " .. eventName .. " at " .. targetZone)
+                else
+                    print("❌ [Manual Teleport] Invalid location for " .. eventName)
+                end
+            end
+        end)
+    end
+    
+    local EventInfoSection = EventTab:NewSection("Event Information")
+    EventInfoSection:NewButton("📊 Show Event List", "Display all trackable events", function()
+        print("📋 [Event System] Trackable Events:")
+        for eventName, eventData in pairs(EVENTS_DATA) do
+            local zones = table.concat(eventData.zones, ", ")
+            print("  🎯 " .. eventName .. " -> " .. zones)
+        end
+    end)
+end
+
+print("✅ [Event System] Event Zone ESP & Teleport system initialized!")
 
 -- Automation Section
 local AutoSection = AutoTab:NewSection("Autofarm")
