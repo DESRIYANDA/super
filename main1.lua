@@ -1277,7 +1277,6 @@ local EVENTS_DATA = {
     
     -- Special Events
     ["Travelling Merchant"] = {color = Color3.fromRGB(255, 165, 0), zones = {"Ocean", "Moosewood"}},
-    ["Meteors"] = {color = Color3.fromRGB(255, 100, 100), zones = {"Ocean", "Snowcap Island"}},
     ["Sunken Chests"] = {color = Color3.fromRGB(255, 215, 0), zones = {"Ocean", "The Depths"}}
 }
 
@@ -1309,31 +1308,30 @@ local ZONE_COORDS = {
     ["Hadal Blacksite"] = CFrame.new(-4465, -604, 1874)
 }
 
--- Function untuk membuat ESP Text
+-- Function untuk membuat ESP Text dengan ScreenGui (lebih kompatibel)
 function EventSystem:createESPText(eventName, position, distance)
     local espObj = {}
     
-    -- Create BillboardGui
-    espObj.billboard = Instance.new("BillboardGui")
-    espObj.billboard.Name = "EventESP_" .. eventName
-    espObj.billboard.StudsOffset = Vector3.new(0, 5, 0)
-    espObj.billboard.Size = UDim2.new(0, 200, 0, 50)
-    espObj.billboard.Adornee = nil
-    espObj.billboard.Parent = workspace.CurrentCamera
+    -- Create ScreenGui di PlayerGui
+    espObj.screenGui = Instance.new("ScreenGui")
+    espObj.screenGui.Name = "EventESP_" .. eventName
+    espObj.screenGui.Parent = lp.PlayerGui
+    espObj.screenGui.ResetOnSpawn = false
     
-    -- Create Frame untuk background
+    -- Create Frame untuk ESP
     espObj.frame = Instance.new("Frame")
-    espObj.frame.Size = UDim2.new(1, 0, 1, 0)
-    espObj.frame.BackgroundTransparency = 0.7
+    espObj.frame.Size = UDim2.new(0, 150, 0, 40)
     espObj.frame.BackgroundColor3 = EVENTS_DATA[eventName].color
-    espObj.frame.BorderSizePixel = 0
-    espObj.frame.Parent = espObj.billboard
+    espObj.frame.BackgroundTransparency = 0.3
+    espObj.frame.BorderSizePixel = 1
+    espObj.frame.BorderColor3 = Color3.fromRGB(255, 255, 255)
+    espObj.frame.Parent = espObj.screenGui
     
     -- Create TextLabel
     espObj.textLabel = Instance.new("TextLabel")
     espObj.textLabel.Size = UDim2.new(1, 0, 1, 0)
     espObj.textLabel.BackgroundTransparency = 1
-    espObj.textLabel.Text = eventName .. "\n[" .. distance .. "m]"
+    espObj.textLabel.Text = "🎯 " .. eventName .. "\n📍 " .. distance .. "m"
     espObj.textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     espObj.textLabel.TextStrokeTransparency = 0
     espObj.textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
@@ -1341,17 +1339,32 @@ function EventSystem:createESPText(eventName, position, distance)
     espObj.textLabel.Font = Enum.Font.SourceSansBold
     espObj.textLabel.Parent = espObj.frame
     
-    -- Position update function
+    -- Store original position
+    espObj.worldPosition = position
+    
+    -- Position update function dengan 3D to 2D conversion
     espObj.updatePosition = function()
         if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
             local camera = workspace.CurrentCamera
-            local worldPos = position
+            local worldPos = espObj.worldPosition
+            
+            -- Convert 3D world position to 2D screen position
             local screenPos, onScreen = camera:WorldToScreenPoint(worldPos)
             
-            if onScreen then
-                espObj.billboard.Position = UDim2.new(0, screenPos.X, 0, screenPos.Y)
+            if onScreen and screenPos.Z > 0 then
+                -- Position on screen
+                espObj.frame.Position = UDim2.new(0, screenPos.X - 75, 0, screenPos.Y - 20)
+                espObj.frame.Visible = true
+                
+                -- Update distance
                 local newDistance = math.floor((lp.Character.HumanoidRootPart.Position - worldPos).Magnitude)
-                espObj.textLabel.Text = eventName .. "\n[" .. newDistance .. "m]"
+                espObj.textLabel.Text = "🎯 " .. eventName .. "\n📍 " .. newDistance .. "m"
+                
+                -- Fade based on distance
+                local alpha = math.max(0.3, 1 - (newDistance / 2000))
+                espObj.frame.BackgroundTransparency = 1 - alpha
+            else
+                espObj.frame.Visible = false
             end
         end
     end
@@ -1359,45 +1372,86 @@ function EventSystem:createESPText(eventName, position, distance)
     return espObj
 end
 
--- Function untuk scan event aktif dari workspace
+-- Function untuk scan event aktif dari workspace (Improved)
 function EventSystem:scanActiveEvents()
     if self.isScanning then return end
     self.isScanning = true
     
     self.activeEvents = {}
     
-    -- Scan dari workspace untuk mencari event indicators
     pcall(function()
-        -- Method 1: Scan dari ReplicatedStorage events
-        if ReplicatedStorage:FindFirstChild("events") then
-            for _, child in pairs(ReplicatedStorage.events:GetChildren()) do
-                if child.Name:find("Event") or child.Name:find("Hunt") or child.Name:find("Migration") then
-                    local eventName = child.Name:gsub("Event", ""):gsub("Active", "")
-                    if EVENTS_DATA[eventName] then
-                        table.insert(self.activeEvents, eventName)
+        -- Method 1: Scan dari workspace.active untuk event indicators
+        if workspace:FindFirstChild("active") then
+            for _, child in pairs(workspace.active:GetChildren()) do
+                -- Check untuk various event indicators
+                if child.Name:find("Whirlpool") or child.Name:find("whirlpool") then
+                    if not table.find(self.activeEvents, "Whirlpool") then
+                        table.insert(self.activeEvents, "Whirlpool")
+                    end
+                elseif child.Name:find("Storm") or child.Name:find("storm") then
+                    if child.Name:find("Zeus") and not table.find(self.activeEvents, "Zeus Storm") then
+                        table.insert(self.activeEvents, "Zeus Storm")
+                    elseif child.Name:find("Cursed") and not table.find(self.activeEvents, "Cursed Storm") then
+                        table.insert(self.activeEvents, "Cursed Storm")
+                    end
+                elseif child.Name:find("Nuke") or child.Name:find("nuke") then
+                    if not table.find(self.activeEvents, "Nuke") then
+                        table.insert(self.activeEvents, "Nuke")
+                    end
+                elseif child.Name:find("Blizzard") or child.Name:find("blizzard") then
+                    if not table.find(self.activeEvents, "Blizzard") then
+                        table.insert(self.activeEvents, "Blizzard")
+                    end
+                elseif child.Name:find("Shark") or child.Name:find("shark") then
+                    if child.Name:find("Great") and not table.find(self.activeEvents, "Shark Hunt") then
+                        table.insert(self.activeEvents, "Shark Hunt")
                     end
                 end
             end
         end
         
-        -- Method 2: Scan dari workspace untuk environmental indicators
-        for eventName, eventData in pairs(EVENTS_DATA) do
-            for _, zoneName in pairs(eventData.zones) do
-                if ZONE_COORDS[zoneName] then
-                    -- Simulasi detection - dalam implementasi nyata akan scan indicators
-                    local random = math.random(1, 100)
-                    if random <= 15 then -- 15% chance event aktif (simulation)
-                        if not table.find(self.activeEvents, eventName) then
-                            table.insert(self.activeEvents, eventName)
+        -- Method 2: Check PlayerGui untuk event notifications
+        if lp.PlayerGui:FindFirstChild("hud") then
+            local hud = lp.PlayerGui.hud
+            if hud:FindFirstChild("safezone") then
+                local safezone = hud.safezone
+                -- Scan untuk event text indicators
+                for _, descendant in pairs(safezone:GetDescendants()) do
+                    if descendant:IsA("TextLabel") then
+                        local text = descendant.Text:lower()
+                        
+                        -- Check for specific event keywords
+                        if text:find("abundance") and not table.find(self.activeEvents, "Fish Abundance") then
+                            table.insert(self.activeEvents, "Fish Abundance")
+                        elseif text:find("lucky") and not table.find(self.activeEvents, "Lucky Pool") then
+                            table.insert(self.activeEvents, "Lucky Pool")
+                        elseif text:find("merchant") and not table.find(self.activeEvents, "Travelling Merchant") then
+                            table.insert(self.activeEvents, "Travelling Merchant")
                         end
                     end
                 end
             end
         end
+        
+        -- Method 3: For demonstration - add some common events
+        if #self.activeEvents == 0 then
+            -- Add some demo events untuk testing
+            local demoEvents = {"Fish Abundance", "Shark Hunt", "Whirlpool"}
+            local selectedDemo = demoEvents[math.random(1, #demoEvents)]
+            table.insert(self.activeEvents, selectedDemo)
+            print("🎮 [Demo Mode] Added " .. selectedDemo .. " for testing")
+        end
     end)
     
     self.isScanning = false
     print("🔍 [Event Scanner] Found " .. #self.activeEvents .. " active events")
+    
+    -- Print found events
+    if #self.activeEvents > 0 then
+        for i, eventName in pairs(self.activeEvents) do
+            print("  " .. i .. ". 🎯 " .. eventName)
+        end
+    end
 end
 
 -- Function untuk toggle ESP
@@ -1405,8 +1459,8 @@ function EventSystem:toggleESP(enabled)
     if not enabled then
         -- Clear existing ESP
         for _, espObj in pairs(self.espObjects) do
-            if espObj.billboard then
-                espObj.billboard:Destroy()
+            if espObj.screenGui then
+                espObj.screenGui:Destroy()
             end
         end
         self.espObjects = {}
@@ -1416,6 +1470,11 @@ function EventSystem:toggleESP(enabled)
     
     -- Scan untuk event aktif
     self:scanActiveEvents()
+    
+    if #self.activeEvents == 0 then
+        print("⚠️ [Event ESP] No active events found to display ESP")
+        return
+    end
     
     -- Create ESP untuk setiap event aktif
     for _, eventName in pairs(self.activeEvents) do
@@ -1432,7 +1491,7 @@ function EventSystem:toggleESP(enabled)
                     local espObj = self:createESPText(eventName, zoneCoord.Position, distance)
                     table.insert(self.espObjects, espObj)
                     
-                    print("✨ [Event ESP] Added ESP for " .. eventName .. " at " .. zoneName)
+                    print("✨ [Event ESP] Added ESP for " .. eventName .. " at " .. zoneName .. " (" .. distance .. "m)")
                 end
             end
         end
@@ -1532,6 +1591,19 @@ if EventTab then
             end
         else
             print("❌ [Event Scanner] No active events detected")
+        end
+    end)
+    
+    EventESPSection:NewButton("🎮 Demo ESP", "Add demo events for testing ESP", function()
+        -- Add demo events untuk testing
+        EventSystem.activeEvents = {"Fish Abundance", "Shark Hunt", "Whirlpool", "Lucky Pool"}
+        print("🎮 [Demo Mode] Added demo events for ESP testing")
+        
+        -- Auto enable ESP
+        if flags['eventesp'] then
+            EventSystem:toggleESP(false) -- Clear first
+            wait(0.5)
+            EventSystem:toggleESP(true) -- Re-enable
         end
     end)
     
