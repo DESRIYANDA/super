@@ -38,8 +38,45 @@ flags['autoreeldelay'] = 0.5
 -- Super Instant Reel Variables
 flags['superinstantreel'] = false
 flags['instantbobber'] = false
+flags['instantreel'] = false -- Add instant reel flag
+flags['instantreeldelay'] = 0.1 -- Default 100ms delay
 local superInstantReelActive = false
+local instantReelActive = false
 local lureMonitorConnection = nil
+local instantReelConnection = nil
+
+-- 🔥 NEW INSTANT REEL SYSTEM - Continuous catchfinish loop
+local function setupInstantReelLoop()
+    if not instantReelActive then
+        instantReelActive = true
+        
+        -- Create high-speed loop for catchfinish calls
+        instantReelConnection = task.spawn(function()
+            while true do
+                if flags['instantreel'] then
+                    pcall(function()
+                        local rod = FindRod()
+                        if rod then
+                            -- Try to access catchfinish remote
+                            local catchfinishRemote = ReplicatedStorage.shared.modules.fishing.rodresources.events.catchfinish
+                            if catchfinishRemote then
+                                -- Rapid fire catchfinish with configurable delay
+                                catchfinishRemote:FireServer(100, true)
+                                print("🔥 [Instant Reel Loop] Catchfinish fired!")
+                            end
+                        end
+                    end)
+                    -- Use configurable delay
+                    task.wait(flags['instantreeldelay'] or 0.1)
+                else
+                    task.wait(0.5) -- Longer wait when disabled
+                end
+            end
+        end)
+        
+        print("✅ [Instant Reel Loop] Continuous catchfinish system activated!")
+    end
+end
 
 -- ULTIMATE Super Instant Reel System (TRUE INSTANT - NO ANIMATION)
 local function setupUltimateSuperInstantReel()
@@ -162,8 +199,9 @@ local function setupUltimateSuperInstantReel()
     end
 end
 
--- Call setup function
+-- Call setup functions
 setupUltimateSuperInstantReel()
+setupInstantReelLoop()
 
 local TeleportLocations = {
     ['Zones'] = {
@@ -1831,6 +1869,7 @@ ReelSection:NewToggle("Super Instant Reel", "⚡ ZERO ANIMATION - Instantly catc
     if state then
         flags['autoreel'] = false -- Disable normal auto reel if super instant enabled
         flags['alwayscatch'] = false -- Disable always catch to prevent conflicts
+        flags['instantreel'] = false -- Disable instant reel to prevent conflicts
         print("🚀 [Super Instant Reel] ACTIVATED - Maximum Speed!")
     else
         print("⏸️ [Super Instant Reel] Deactivated")
@@ -1865,11 +1904,20 @@ if CheckFunc(hookmetamethod) then
             flags['instantreel'] = false -- Disable instant reel if always catch enabled
         end
     end)
-    HookSection:NewToggle("Instant Reel", "Instantly reel fish when lure = 100 (RISKY)", function(state)
+    HookSection:NewToggle("Instant Reel", "🔥 LOOP catchfinish remote continuously (VERY FAST)", function(state)
         flags['instantreel'] = state
         if state then
             flags['alwayscatch'] = false -- Disable always catch if instant reel enabled
+            flags['superinstantreel'] = false -- Disable super instant reel if instant reel enabled
+            print("🚀 [Instant Reel] ACTIVATED - Continuous catchfinish loop!")
+        else
+            print("⏸️ [Instant Reel] Deactivated")
         end
+    end)
+    
+    HookSection:NewSlider("Instant Reel Speed", "Loop delay in milliseconds (lower = faster)", 50, 500, function(value)
+        flags['instantreeldelay'] = value / 1000 -- Convert to seconds
+        print("⚡ [Instant Reel] Speed set to: " .. value .. "ms delay")
     end)
 end
 
@@ -2252,16 +2300,8 @@ RunService.Heartbeat:Connect(function()
         end
     end
     
-    -- Instant Reel (No Delay) - RISKY but very fast
-    if flags['instantreel'] then
-        local rod = FindRod()
-        if rod ~= nil and rod['values']['lure'].Value == 100 then
-            -- Add small random delay to make it more natural
-            local randomDelay = math.random(5, 25) / 1000 -- 0.005-0.025 seconds
-            task.wait(randomDelay)
-            ReplicatedStorage.events.reelfinished:FireServer(100, true)
-        end
-    end
+    -- 🔥 INSTANT REEL - Handled by separate loop system
+    -- (Logic moved to setupInstantReelLoop function for better performance)
 
     -- Visuals
     if flags['rodchams'] then
