@@ -46,15 +46,15 @@ local function setupUltimateSuperInstantReel()
     if not superInstantReelActive then
         superInstantReelActive = true
         
-        -- Method 1: Monitor lure value directly (INSTANT detection)
+        -- Method 1: Monitor lure value + bite status (CORRECT detection)
         lureMonitorConnection = RunService.Heartbeat:Connect(function()
             if flags['superinstantreel'] then
                 pcall(function()
                     local rod = FindRod()
-                    if rod and rod.values and rod.values.lure then
-                        -- INSTANT catch when lure reaches 100% (no delay at all!)
-                        if rod.values.lure.Value >= 100 then
-                            -- IMMEDIATE fire - no waiting for GUI!
+                    if rod and rod.values then
+                        -- Check for ACTUAL fish bite (not just lure at 100%)
+                        if rod.values.bite and rod.values.bite.Value == true then
+                            -- INSTANT catch when fish ACTUALLY bites!
                             ReplicatedStorage.events.reelfinished:FireServer(100, true)
                             
                             -- Force destroy any reel GUI instantly
@@ -62,13 +62,14 @@ local function setupUltimateSuperInstantReel()
                                 lp.PlayerGui.reel:Destroy()
                             end
                             
-                            print("⚡ [ULTIMATE INSTANT] Fish caught at 100% lure - NO ANIMATION!")
+                            print("⚡ [ULTIMATE INSTANT] Fish BITE detected - INSTANT CATCH!")
                         end
                         
-                        -- Also catch at 99.9% for extra safety
-                        if rod.values.lure.Value >= 99.9 and rod.values.lure.Value < 100 then
+                        -- Alternative check: lure at 100% AND bite detected
+                        if rod.values.lure and rod.values.lure.Value >= 100 and 
+                           rod.values.bite and rod.values.bite.Value then
                             ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                            print("⚡ [ULTRA FAST] Fish caught at 99.9% - INSTANT!")
+                            print("🎯 [BITE CONFIRMED] Lure 100% + Bite = INSTANT!")
                         end
                     end
                 end)
@@ -2180,25 +2181,26 @@ if flags then
         while true do
             task.wait(0.01) -- Ultra-fast checking every 10ms
             
-            -- Always Catch Mode
+            -- Always Catch Mode (when fish actually bites)
             if flags['alwayscatch'] then
                 local rod = FindRod()
-                if rod and rod['values'] and rod['values']['lure'] then
-                    if rod['values']['lure'].Value >= 99.5 then
-                        -- Standard always catch
+                if rod and rod['values'] then
+                    -- Check for actual bite, not just lure percentage
+                    if rod['values']['bite'] and rod['values']['bite'].Value == true then
                         pcall(function()
                             ReplicatedStorage.events.reelfinished:FireServer(100, true)
                         end)
+                        print("🎣 [Always Catch] Fish bite detected - auto catch!")
                     end
                 end
             end
             
-            -- Super Instant Reel Mode (Even faster)
+            -- Super Instant Reel Mode (Even faster when fish bites)
             if flags['superinstantreel'] then
                 local rod = FindRod()
-                if rod and rod['values'] and rod['values']['lure'] then
-                    -- INSTANT catch at 99.8% or higher - no waiting!
-                    if rod['values']['lure'].Value >= 99.8 then
+                if rod and rod['values'] then
+                    -- INSTANT catch only when fish ACTUALLY bites
+                    if rod['values']['bite'] and rod['values']['bite'].Value == true then
                         -- Multi-fire for instant results
                         for i = 1, 3 do
                             pcall(function()
@@ -2213,6 +2215,7 @@ if flags then
                             end
                         end)
                         
+                        print("⚡ [SUPER INSTANT] BITE detected - INSTANT catch!")
                         task.wait(0.1) -- Small delay to prevent spam
                     end
                 end
@@ -2257,12 +2260,19 @@ end
 - Enhanced GUI force-close functionality
 - Hook system for manual casting instant bobber
 
-🎯 How Super Instant Reel works:
-1. Monitors for fish bite (lure value >= 99.9)
-2. Instantly fires reelfinished event with perfect score
-3. Force disables reel GUI to prevent delays
-4. Uses multiple rapid calls for maximum success rate
-5. No delays or waiting - pure speed!
+🎯 How Super Instant Reel works (CORRECTED):
+1. Monitors for ACTUAL fish bite (bite.Value == true) - NOT just lure %
+2. Does NOT catch at lure 99.8% (fish might not bite yet)
+3. Only catches when fish ACTUALLY bites the hook
+4. Instantly fires reelfinished event with perfect score
+5. Force destroys reel GUI to prevent delays
+6. Uses multiple rapid calls for maximum success rate
+7. No delays or waiting - pure speed when fish ACTUALLY bites!
+
+⚠️ IMPORTANT: 
+- Lure 100% ≠ Fish bite (fish is just interested)
+- Bite = true = Fish ACTUALLY bites (this is when we catch!)
+- This prevents false catches and ensures accuracy
 
 ⚡ How Instant Bobber works:
 1. Works with both AutoCast and Manual casting
