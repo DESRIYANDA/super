@@ -3,6 +3,7 @@ local Players = cloneref(game:GetService('Players'))
 local ReplicatedStorage = cloneref(game:GetService('ReplicatedStorage'))
 local RunService = cloneref(game:GetService('RunService'))
 local GuiService = cloneref(game:GetService('GuiService'))
+local VirtualInputManager = cloneref(game:GetService('VirtualInputManager'))
 
 -- Protect TweenService from workspace errors
 pcall(function()
@@ -46,6 +47,7 @@ local AutoZoneCast = false
 flags['superinstantreel'] = false
 flags['instantbobber'] = false
 flags['enhancedinstantbobber'] = false
+flags['superinstantnoanimation'] = false -- NEW: Disable all animations during super instant reel
 local superInstantReelActive = false
 local lureMonitorConnection = nil
 
@@ -69,16 +71,27 @@ local function setupOptimizedSuperInstantReel()
                         local lureValue = rod.values.lure and rod.values.lure.Value or 0
                         local biteValue = rod.values.bite and rod.values.bite.Value or false
                         
-                        -- FAST FISH LIFTING: Speed up character animations when super instant reel is active
+                        -- ANIMATION HANDLING: Speed up or disable animations based on settings
                         local character = lp.Character
                         if character and character:FindFirstChild("Humanoid") then
                             local humanoid = character.Humanoid
                             
-                            -- Speed up all character animations for faster fish lifting
-                            for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                                if track.Name:lower():find("fish") or track.Name:lower():find("reel") or 
-                                   track.Name:lower():find("catch") or track.Name:lower():find("lift") then
-                                    track:AdjustSpeed(3) -- 3x faster fish lifting animation
+                            if flags['superinstantnoanimation'] then
+                                -- DISABLE ALL ANIMATIONS: Stop all reel/fish animations completely
+                                for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                    if track.Name:lower():find("fish") or track.Name:lower():find("reel") or 
+                                       track.Name:lower():find("catch") or track.Name:lower():find("lift") or
+                                       track.Name:lower():find("cast") or track.Name:lower():find("rod") then
+                                        track:Stop() -- Completely stop animation
+                                    end
+                                end
+                            else
+                                -- FAST FISH LIFTING: Speed up character animations when super instant reel is active
+                                for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                    if track.Name:lower():find("fish") or track.Name:lower():find("reel") or 
+                                       track.Name:lower():find("catch") or track.Name:lower():find("lift") then
+                                        track:AdjustSpeed(3) -- 3x faster fish lifting animation
+                                    end
                                 end
                             end
                         end
@@ -94,21 +107,32 @@ local function setupOptimizedSuperInstantReel()
                                 reelGui:Destroy()
                             end
                             
-                            -- FAST FISH LIFTING: Instantly speed up any fish-related animations
+                            -- ANIMATION HANDLING DURING CATCH: Disable or speed up based on settings
                             pcall(function()
                                 local character = lp.Character
                                 if character and character:FindFirstChild("Humanoid") then
                                     local humanoid = character.Humanoid
                                     
-                                    -- Boost speed of all active animations during fish catch
-                                    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                                        track:AdjustSpeed(5) -- 5x speed boost during catch
-                                    end
-                                    
-                                    -- Reset animation speed after short delay
-                                    task.wait(0.1)
-                                    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                                        track:AdjustSpeed(1) -- Back to normal speed
+                                    if flags['superinstantnoanimation'] then
+                                        -- NO ANIMATION MODE: Stop all fishing animations instantly
+                                        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                            if track.Name:lower():find("fish") or track.Name:lower():find("reel") or 
+                                               track.Name:lower():find("catch") or track.Name:lower():find("lift") or
+                                               track.Name:lower():find("cast") or track.Name:lower():find("rod") then
+                                                track:Stop() -- Instantly stop all fishing animations
+                                            end
+                                        end
+                                    else
+                                        -- FAST ANIMATION MODE: Boost speed of all active animations during fish catch
+                                        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                            track:AdjustSpeed(5) -- 5x speed boost during catch
+                                        end
+                                        
+                                        -- Reset animation speed after short delay
+                                        task.wait(0.1)
+                                        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                            track:AdjustSpeed(1) -- Back to normal speed
+                                        end
                                     end
                                 end
                             end)
@@ -136,6 +160,31 @@ local function setupOptimizedSuperInstantReel()
         
         -- print("✅ [OPTIMIZED INSTANT REEL] Smooth animation system activated!")
         -- print("🎯 Reduced CPU usage while maintaining instant catch!")
+        
+        -- CONTINUOUS ANIMATION DISABLING SYSTEM (for no animation mode)
+        task.spawn(function()
+            while superInstantReelActive do
+                task.wait(0.1) -- Check every 100ms
+                if flags['superinstantreel'] and flags['superinstantnoanimation'] then
+                    pcall(function()
+                        local character = lp.Character
+                        if character and character:FindFirstChild("Humanoid") then
+                            local humanoid = character.Humanoid
+                            
+                            -- Continuously stop all fishing-related animations
+                            for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                if track.Name:lower():find("fish") or track.Name:lower():find("reel") or 
+                                   track.Name:lower():find("catch") or track.Name:lower():find("lift") or
+                                   track.Name:lower():find("cast") or track.Name:lower():find("rod") or
+                                   track.Name:lower():find("pull") or track.Name:lower():find("bobber") then
+                                    track:Stop() -- Aggressively stop all fishing animations
+                                end
+                            end
+                        end
+                    end)
+                end
+            end
+        end)
     end
 end
 
@@ -2053,7 +2102,7 @@ ShakeSection:NewToggle("Auto Shake V1", "Standard autoshake with conflict manage
             autoShakeV2Connection:Disconnect()
             autoShakeV2Connection = nil
         end
-        -- print("🛡️ [AutoShake V1] Advanced system activated - V2 disabled")
+        print("🛡️ [AutoShake V1] Advanced system activated - V2 disabled")
     end
 end)
 
@@ -2062,15 +2111,27 @@ local autoShakeV2Active = false
 local autoShakeV2Connection = nil
 local autoShakeV2Delay = 0
 
--- AutoShake V2 Function (meniru main4.lua)
-local function handleButtonClickV2(button)
+-- AutoShake V2 Statistics
+local shakeV2Stats = {
+    activations = 0,
+    lastActivation = 0
+}
+
+-- Enhanced AutoShake V2 Function with statistics (defined first)
+local function enhancedHandleButtonClickV2(button)
     if not button.Visible then return end
     
     GuiService.SelectedObject = button
     task.wait(autoShakeV2Delay)
     
-    game:GetService('VirtualInputManager'):SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-    game:GetService('VirtualInputManager'):SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+    
+    -- Update statistics
+    shakeV2Stats.activations = shakeV2Stats.activations + 1
+    shakeV2Stats.lastActivation = tick()
+    
+    print("⚡ [AutoShake V2] #" .. shakeV2Stats.activations .. " - Ultra-fast execution!")
 end
 
 ShakeSection:NewToggle("Auto Shake V2", "⚡ Ultra-fast shake (main4.lua style) - LIGHTWEIGHT", function(state)
@@ -2089,7 +2150,7 @@ ShakeSection:NewToggle("Auto Shake V2", "⚡ Ultra-fast shake (main4.lua style) 
                         if child:IsA("ImageButton") and child.Name == "button" then
                             task.spawn(function()
                                 if autoShakeV2Active then
-                                    enhancedHandleButtonClickV2(child)
+                                    enhancedHandleButtonClickV2(child) -- Use enhanced function
                                 end
                             end)
                         end
@@ -2098,15 +2159,15 @@ ShakeSection:NewToggle("Auto Shake V2", "⚡ Ultra-fast shake (main4.lua style) 
             end
         end)
         
-        -- print("⚡ [AutoShake V2] ULTRA-FAST shake system activated!")
-        -- print("🚀 [Performance] Lightweight main4.lua-style detection!")
+        print("⚡ [AutoShake V2] ULTRA-FAST shake system activated!")
+        print("🚀 [Performance] Lightweight main4.lua-style detection!")
     else
         -- Cleanup V2 connections
         if autoShakeV2Connection then
             autoShakeV2Connection:Disconnect()
             autoShakeV2Connection = nil
         end
-        -- print("⏸️ [AutoShake V2] Deactivated")
+        print("⏸️ [AutoShake V2] Deactivated")
     end
 end)
 
@@ -2122,35 +2183,36 @@ ShakeSection:NewLabel("V1: Advanced + Conflict-safe + Integrated")
 ShakeSection:NewLabel("V2: Ultra-fast + Lightweight + Direct")
 ShakeSection:NewLabel("💡 Use V2 for maximum shake speed!")
 
--- AutoShake V2 Statistics (optional debug info)
-local shakeV2Stats = {
-    activations = 0,
-    lastActivation = 0
-}
-
--- Enhanced AutoShake V2 with statistics
-local function enhancedHandleButtonClickV2(button)
-    if not button.Visible then return end
-    
-    GuiService.SelectedObject = button
-    task.wait(autoShakeV2Delay)
-    
-    game:GetService('VirtualInputManager'):SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-    game:GetService('VirtualInputManager'):SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-    
-    -- Update statistics
-    shakeV2Stats.activations = shakeV2Stats.activations + 1
-    shakeV2Stats.lastActivation = tick()
-    
-    -- Optional debug output
-    -- print("⚡ [AutoShake V2] #" .. shakeV2Stats.activations .. " - Ultra-fast execution!")
-end
+-- AutoShake V2 Statistics (moved to top with function definition)
 
 -- Optional: Add reset button for statistics
 ShakeSection:NewButton("🔄 Reset V2 Stats", "Reset AutoShake V2 statistics", function()
     shakeV2Stats.activations = 0
     shakeV2Stats.lastActivation = 0
-    -- print("📊 [AutoShake V2] Statistics reset!")
+    print("📊 [AutoShake V2] Statistics reset!")
+end)
+
+-- Debug button to inspect shake UI structure
+ShakeSection:NewButton("🔍 Debug Shake UI", "Show current shake UI structure for debugging", function()
+    print("🔍 [DEBUG] Inspecting PlayerGui for shake UI...")
+    
+    for _, child in pairs(lp.PlayerGui:GetChildren()) do
+        if child.Name == "shakeui" then
+            print("✅ Found shakeui: " .. child.ClassName)
+            
+            for _, subchild in pairs(child:GetChildren()) do
+                print("  ├─ " .. subchild.Name .. " (" .. subchild.ClassName .. ")")
+                
+                if subchild.Name == "safezone" then
+                    for _, subsubchild in pairs(subchild:GetChildren()) do
+                        print("    ├─ " .. subsubchild.Name .. " (" .. subsubchild.ClassName .. ")")
+                    end
+                end
+            end
+        end
+    end
+    
+    print("🔍 [DEBUG] Inspection complete!")
 end)
 
 local ReelSection = AutoTab:NewSection("Auto Reel Settings") 
@@ -2172,6 +2234,17 @@ ReelSection:NewToggle("Super Instant Reel", "⚡ ZERO ANIMATION + FAST FISH LIFT
         -- print("🎯 [Zero Animation] Instant catch with NO minigame!")
     else
         -- print("⏸️ [Super Instant Reel] Deactivated")
+    end
+end)
+
+-- No Animation Toggle for Super Instant Reel
+ReelSection:NewToggle("Disable Reel Animations", "🚫 Completely disable all reel/fish animations when Super Instant Reel is active", function(state)
+    flags['superinstantnoanimation'] = state
+    if state then
+        -- print("🚫 [No Animation] All reel animations will be disabled!")
+        -- print("⚡ [Ultra Speed] Maximum performance mode activated!")
+    else
+        -- print("🎬 [Animations] Reel animations will play normally")
     end
 end)
 
@@ -2561,8 +2634,23 @@ RunService.Heartbeat:Connect(function()
         if FindChild(lp.PlayerGui, 'shakeui') and FindChild(lp.PlayerGui['shakeui'], 'safezone') and FindChild(lp.PlayerGui['shakeui']['safezone'], 'button') then
             GuiService.SelectedObject = lp.PlayerGui['shakeui']['safezone']['button']
             if GuiService.SelectedObject == lp.PlayerGui['shakeui']['safezone']['button'] then
-                game:GetService('VirtualInputManager'):SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                game:GetService('VirtualInputManager'):SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                print("🛡️ [AutoShake V1] Standard shake executed!")
+            end
+        else
+            -- Debug: Check what's missing
+            local shakeui = FindChild(lp.PlayerGui, 'shakeui')
+            if shakeui then
+                local safezone = FindChild(shakeui, 'safezone')
+                if safezone then
+                    local button = FindChild(safezone, 'button')
+                    if not button then
+                        print("❌ [AutoShake V1] Button not found in safezone")
+                    end
+                else
+                    print("❌ [AutoShake V1] Safezone not found in shakeui")
+                end
             end
         end
     elseif flags['autoshake'] and flags['superinstantreel'] then
@@ -2571,6 +2659,7 @@ RunService.Heartbeat:Connect(function()
             local shakeUI = lp.PlayerGui:FindFirstChild('shakeui')
             if shakeUI then
                 shakeUI:Destroy() -- Instantly bypass shake UI when instant reel is active
+                print("🚫 [AutoShake V1] Shake UI bypassed (Super Instant Reel mode)")
             end
         end)
     end
@@ -3361,6 +3450,73 @@ Instance.new = function(className, ...)
     
     return instance
 end
+
+-- ANIMATION BLOCKING HOOK SYSTEM - Prevents fishing animations from playing
+local originalHumanoidLoadAnimation = nil
+pcall(function()
+    local character = lp.Character
+    if character and character:FindFirstChild("Humanoid") then
+        local humanoid = character.Humanoid
+        originalHumanoidLoadAnimation = humanoid.LoadAnimation
+        
+        humanoid.LoadAnimation = function(self, animation)
+            local animationTrack = originalHumanoidLoadAnimation(self, animation)
+            
+            -- Hook the Play method to check for no animation mode
+            local originalPlay = animationTrack.Play
+            animationTrack.Play = function(track, ...)
+                -- Block fishing animations when no animation mode is active
+                if flags['superinstantreel'] and flags['superinstantnoanimation'] then
+                    local animationId = tostring(animation.AnimationId):lower()
+                    if animationId:find("fish") or animationId:find("reel") or animationId:find("cast") or 
+                       animationId:find("rod") or animationId:find("catch") or animationId:find("lift") or
+                       animationId:find("pull") or animationId:find("bobber") then
+                        -- print("🚫 [ANIMATION BLOCKED] " .. animation.Name .. " prevented from playing!")
+                        return -- Don't play the animation
+                    end
+                end
+                
+                -- Play the animation normally if not blocked
+                return originalPlay(track, ...)
+            end
+            
+            return animationTrack
+        end
+    end
+end)
+
+-- Character respawn handler for animation blocking
+lp.CharacterAdded:Connect(function(character)
+    task.wait(1) -- Wait for character to fully load
+    pcall(function()
+        local humanoid = character:WaitForChild("Humanoid", 5)
+        if humanoid then
+            originalHumanoidLoadAnimation = humanoid.LoadAnimation
+            
+            humanoid.LoadAnimation = function(self, animation)
+                local animationTrack = originalHumanoidLoadAnimation(self, animation)
+                
+                -- Hook the Play method
+                local originalPlay = animationTrack.Play
+                animationTrack.Play = function(track, ...)
+                    -- Block fishing animations when no animation mode is active
+                    if flags['superinstantreel'] and flags['superinstantnoanimation'] then
+                        local animationId = tostring(animation.AnimationId):lower()
+                        if animationId:find("fish") or animationId:find("reel") or animationId:find("cast") or 
+                           animationId:find("rod") or animationId:find("catch") or animationId:find("lift") or
+                           animationId:find("pull") or animationId:find("bobber") then
+                            return -- Don't play the animation
+                        end
+                    end
+                    
+                    return originalPlay(track, ...)
+                end
+                
+                return animationTrack
+            end
+        end
+    end)
+end)
 
 -- FINAL SAFETY NET - Continuous monitoring
 task.spawn(function()
