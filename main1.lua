@@ -35,6 +35,12 @@ local tooltipmessage
 flags['autocastdelay'] = 0.5
 flags['autoreeldelay'] = 0.5
 flags['noanimationautocast'] = false -- NEW: No animation auto cast
+flags['autocastarmmovement'] = false -- NEW: Arm movement in auto cast
+
+-- Zone Cast Variables
+flags['autozonecast'] = false
+local selectedZoneCast = ""
+local AutoZoneCast = false
 
 -- Super Instant Reel Variables
 flags['superinstantreel'] = false
@@ -135,6 +141,99 @@ end
 
 -- Call optimized setup function
 setupOptimizedSuperInstantReel()
+
+-- Zone Casting Function (inspired by main2.lua)
+local function ZoneCasting()
+    spawn(function()
+        while AutoZoneCast do
+            local player = lp
+            local character = player.Character
+
+            if character then
+                local tool = character:FindFirstChildOfClass("Tool")
+                if tool then
+                    local hasBobber = tool:FindFirstChild("bobber")
+                    if hasBobber then
+                        -- Extend rope to maximum length
+                        local ropeConstraint = hasBobber:FindFirstChild("RopeConstraint")
+                        if ropeConstraint then
+                            ropeConstraint.Length = 200000
+                        end
+
+                        local platformSize = Vector3.new(10, 1, 10)
+                        local platformPositionOffset = Vector3.new(0, -4, 0)
+                        local bobberPosition = nil
+
+                        -- Handle special zones
+                        if selectedZoneCast == "Bluefin Tuna Abundance" then
+                            local selectedZone = Workspace.zones.fishing:FindFirstChild("Deep Ocean")
+                            if selectedZone then
+                                local abundanceValue = selectedZone:FindFirstChild("Abundance")
+                                if abundanceValue and abundanceValue.Value == "Bluefin Tuna" then
+                                    bobberPosition = CFrame.new(selectedZone.Position.X, 126.564, selectedZone.Position.Z)
+                                    -- print("🐟 [Zone Cast] Bluefin Tuna abundance detected!")
+                                end
+                            end
+                        elseif selectedZoneCast == "Swordfish Abundance" then
+                            local selectedZone = Workspace.zones.fishing:FindFirstChild("Deep Ocean")
+                            if selectedZone then
+                                local abundanceValue = selectedZone:FindFirstChild("Abundance")
+                                if abundanceValue and abundanceValue.Value == "Swordfish" then
+                                    bobberPosition = CFrame.new(selectedZone.Position.X, 126.564, selectedZone.Position.Z)
+                                    -- print("⚔️ [Zone Cast] Swordfish abundance detected!")
+                                end
+                            end
+                        elseif selectedZoneCast == "FischFright24" or selectedZoneCast == "Isonade" then
+                            -- Dynamic zones - use zone position
+                            local selectedZone = Workspace.zones.fishing:FindFirstChild(selectedZoneCast)
+                            if selectedZone then
+                                bobberPosition = CFrame.new(selectedZone.Position.X, 126, selectedZone.Position.Z)
+                                -- print("🎃 [Zone Cast] Dynamic zone: " .. selectedZoneCast)
+                            end
+                        else
+                            -- Regular zones with fixed coordinates
+                            local zoneCoord = ZoneCastCoordinates[selectedZoneCast]
+                            if zoneCoord and typeof(zoneCoord) == "CFrame" then
+                                bobberPosition = zoneCoord
+                                -- print("🗺️ [Zone Cast] Regular zone: " .. selectedZoneCast)
+                            end
+                        end
+
+                        -- Apply bobber position if found
+                        if bobberPosition then
+                            hasBobber.CFrame = bobberPosition
+                            
+                            -- Create invisible platform under bobber
+                            local platform = Instance.new("Part")
+                            platform.Size = platformSize
+                            platform.Position = hasBobber.Position + platformPositionOffset
+                            platform.Anchored = true
+                            platform.Parent = hasBobber
+                            platform.BrickColor = BrickColor.new("Bright blue")
+                            platform.Transparency = 1.000
+                            platform.CanCollide = false
+                            platform.Name = "ZoneCastPlatform"
+                            
+                            -- Clean up old platforms
+                            pcall(function()
+                                for _, oldPlatform in pairs(hasBobber:GetChildren()) do
+                                    if oldPlatform.Name == "ZoneCastPlatform" and oldPlatform ~= platform then
+                                        oldPlatform:Destroy()
+                                    end
+                                end
+                            end)
+                        end
+                    else
+                        -- print("🎣 [Zone Cast] No bobber found - cast your rod first!")
+                    end
+                else
+                    -- print("🎣 [Zone Cast] No fishing rod equipped!")
+                end
+            end
+            task.wait(0.01) -- Fast monitoring like main2.lua
+        end
+    end)
+end
 
 local TeleportLocations = {
     ['Zones'] = {
@@ -811,6 +910,45 @@ local TeleportLocations = {
         ['Oxygen #6'] = CFrame.new(-3550, 130, 568)
     }
 }
+
+-- Zone Cast Coordinates (dari main2.lua)
+local ZoneCastCoordinates = {
+    -- Event Zones
+    ['FischFright24'] = "dynamic", -- Uses selectedZone.Position
+    ['Isonade'] = "dynamic", -- Uses selectedZone.Position
+    ['Bluefin Tuna Abundance'] = "abundance", -- Special abundance detection
+    ['Swordfish Abundance'] = "abundance", -- Special abundance detection
+    
+    -- Regular Zones dengan koordinat tetap
+    ['Deep Ocean'] = CFrame.new(1521, 126, -3543),
+    ['Desolate Deep'] = CFrame.new(-1068, 126, -3108),
+    ['Harvesters Spike'] = CFrame.new(-1234, 126, 1748),
+    ['Moosewood Docks'] = CFrame.new(345, 126, 214),
+    ['Moosewood Ocean'] = CFrame.new(890, 126, 465),
+    ['Moosewood Ocean Mythical'] = CFrame.new(270, 126, 52),
+    ['Moosewood Pond'] = CFrame.new(526, 126, 305),
+    ['Mushgrove Water'] = CFrame.new(2541, 126, -792),
+    ['Ocean'] = CFrame.new(-5712, 126, 4059),
+    ['Roslit Bay'] = CFrame.new(-1650, 126, 504),
+    ['Roslit Bay Ocean'] = CFrame.new(-1825, 126, 946),
+    ['Roslit Pond'] = CFrame.new(-1807, 141, 599),
+    ['Roslit Pond Seaweed'] = CFrame.new(-1804, 141, 625),
+    ['Scallop Ocean'] = CFrame.new(16, 126, 730),
+    ['Snowcap Ocean'] = CFrame.new(2308, 126, 2200),
+    ['Snowcap Pond'] = CFrame.new(2777, 275, 2605),
+    ['Sunstone'] = CFrame.new(-645, 126, -955),
+    ['Terrapin Ocean'] = CFrame.new(-57, 126, 2011),
+    ['The Arch'] = CFrame.new(1076, 126, -1202),
+    ['Vertigo'] = CFrame.new(-75, -740, 1200)
+}
+
+-- Zone Cast Names untuk dropdown
+local ZoneCastNames = {}
+for zoneName, _ in pairs(ZoneCastCoordinates) do
+    table.insert(ZoneCastNames, zoneName)
+end
+table.sort(ZoneCastNames) -- Sort alphabetically
+
 local ZoneNames = {}
 local RodNames = {}
 local ItemNames = {}
@@ -1196,6 +1334,7 @@ if Window and Window.NewTab then
         TeleTab = Window:NewTab("🌍 Teleports")
         VisualTab = Window:NewTab("👁️ Visuals")
         EventTab = Window:NewTab("⭐ Zona Event")
+        ZoneCastTab = Window:NewTab("🗺️ Zone Cast")
         
         -- Create Shop Tab using Shop Module
         -- print("🛒 Creating Shop tab...")
@@ -1745,6 +1884,88 @@ end
 
 -- print("✅ [Event System] Event Zone ESP & Teleport system initialized!")
 
+-- Zone Cast Section
+if ZoneCastTab then
+    local ZoneCastMainSection = ZoneCastTab:NewSection("🎯 Zone Cast Settings")
+    
+    ZoneCastMainSection:NewDropdown("Select Zone to Cast", "Choose zone to cast anywhere", ZoneCastNames, function(currentOption)
+        selectedZoneCast = currentOption
+        -- print("🗺️ [Zone Cast] Selected zone: " .. tostring(currentOption))
+    end)
+    
+    ZoneCastMainSection:NewToggle("Enable Zone Cast", "🚀 Cast to selected zone from anywhere", function(state)
+        flags['autozonecast'] = state
+        AutoZoneCast = state
+        if state then
+            if selectedZoneCast and selectedZoneCast ~= "" then
+                ZoneCasting()
+                -- print("🗺️ [Zone Cast] Activated for zone: " .. selectedZoneCast)
+            else
+                -- print("⚠️ [Zone Cast] Please select a zone first!")
+            end
+        else
+            -- print("🗺️ [Zone Cast] Deactivated")
+        end
+    end)
+    
+    local ZoneCastInfoSection = ZoneCastTab:NewSection("ℹ️ Zone Cast Information")
+    ZoneCastInfoSection:NewButton("📋 How Zone Cast Works", "Learn about Zone Cast feature", function()
+        -- print("🗺️ [Zone Cast Info] How it works:")
+        -- print("  1. Cast your rod normally first")
+        -- print("  2. Select a zone from the dropdown")
+        -- print("  3. Enable Zone Cast toggle")
+        -- print("  4. Your bobber will teleport to the selected zone")
+        -- print("  5. Fish in that zone without traveling there!")
+        -- print("🎯 [Zone Cast] Available zones: " .. #ZoneCastNames .. " zones")
+    end)
+    
+    ZoneCastInfoSection:NewButton("🌊 Special Zones Info", "Info about special zones", function()
+        -- print("🎃 [Special Zones] Event zones:")
+        -- print("  • FischFright24 - Halloween Fright Pool")
+        -- print("  • Isonade - Special Boss Zone")
+        -- print("🐟 [Abundance Zones] Dynamic zones:")
+        -- print("  • Bluefin Tuna Abundance - Auto-detects Bluefin abundance")
+        -- print("  • Swordfish Abundance - Auto-detects Swordfish abundance")
+        -- print("⚡ [Regular Zones] Fixed coordinate zones available")
+    end)
+    
+    local ZoneCastStatusSection = ZoneCastTab:NewSection("📊 Zone Cast Status")
+    ZoneCastStatusSection:NewButton("📍 Current Zone Status", "Check current zone cast status", function()
+        if AutoZoneCast and selectedZoneCast ~= "" then
+            -- print("✅ [Zone Cast Status] ACTIVE")
+            -- print("🗺️ Target Zone: " .. selectedZoneCast)
+            if lp.Character and lp.Character:FindFirstChildOfClass("Tool") then
+                local tool = lp.Character:FindFirstChildOfClass("Tool")
+                if tool:FindFirstChild("bobber") then
+                    -- print("🎣 Bobber Status: FOUND - Teleporting to zone")
+                else
+                    -- print("⚠️ Bobber Status: NOT FOUND - Cast your rod first")
+                end
+            else
+                -- print("⚠️ Rod Status: NOT EQUIPPED - Equip a fishing rod")
+            end
+        else
+            -- print("❌ [Zone Cast Status] INACTIVE")
+            if selectedZoneCast == "" then
+                -- print("⚠️ Please select a zone first")
+            end
+        end
+    end)
+    
+    ZoneCastStatusSection:NewButton("📋 Available Zones List", "Show all available zones", function()
+        -- print("🗺️ [Zone Cast] Available zones (" .. #ZoneCastNames .. " total):")
+        for i, zoneName in ipairs(ZoneCastNames) do
+            local zoneType = "Regular"
+            if zoneName:find("Abundance") then
+                zoneType = "Abundance"
+            elseif zoneName == "FischFright24" or zoneName == "Isonade" then
+                zoneType = "Event"
+            end
+            -- print("  " .. i .. ". " .. zoneName .. " (" .. zoneType .. ")")
+        end
+    end)
+end
+
 -- Automation Section
 local AutoSection = AutoTab:NewSection("Autofarm")
 AutoSection:NewToggle("Freeze Character", "Freeze your character in place", function(state)
@@ -1768,6 +1989,18 @@ CastSection:NewToggle("No Animation Auto Cast", "🚫 Auto cast without throwing
         -- print("🎯 [No Animation Auto Cast] Bobber appears instantly in water!")
     else
         -- print("🎣 [No Animation Auto Cast] Deactivated - Normal casting animation")
+    end
+end)
+
+-- NEW: Auto Cast Arm Movement Toggle
+CastSection:NewToggle("Auto Cast Arm Movement", "🤖 Enable throwing animation in auto cast", function(state)
+    flags['autocastarmmovement'] = state
+    if state then
+        -- print("🤖 [Auto Cast Arm Movement] Activated - Full throwing animation!")
+        -- print("🎬 [Auto Cast Arm Movement] Character will show arm movement!")
+        -- print("🎯 [Auto Cast Arm Movement] Realistic casting with animation!")
+    else
+        -- print("🚫 [Auto Cast Arm Movement] Deactivated - No arm animation")
     end
 end)
 
@@ -2234,7 +2467,7 @@ RunService.Heartbeat:Connect(function()
             end
         end)
     end
-    -- ENHANCED AUTOCAST (SUPPORTS NO ANIMATION MODE)
+    -- ENHANCED AUTOCAST (SUPPORTS ARM MOVEMENT TOGGLE)
     if flags['autocast'] then
         local rod = FindRod()
         local currentDelay = flags['autocastdelay'] or 0.5
@@ -2247,11 +2480,15 @@ RunService.Heartbeat:Connect(function()
         if rod ~= nil and rod['values']['lure'].Value <= .001 then
             task.wait(currentDelay)
             
-            -- Check casting mode priority: No Animation > Enhanced Instant > Instant > Normal
+            -- Check casting mode priority: No Animation > Arm Movement > Enhanced Instant > Instant > Normal
             if flags['noanimationautocast'] then
                 -- NO ANIMATION AUTO CAST: Use minimal negative for no animation only
                 rod.events.cast:FireServer(-25, 1) -- Small negative = no animation, instant bobber
                 -- print("🚫 [No Animation Auto Cast] Instant cast without animation!")
+            elseif flags['autocastarmmovement'] then
+                -- ARM MOVEMENT AUTO CAST: Use positive distance for full animation
+                rod.events.cast:FireServer(100, 1) -- Positive distance = full arm animation
+                -- print("🤖 [Auto Cast Arm Movement] Cast with full throwing animation!")
             elseif flags['enhancedinstantbobber'] then
                 -- ENHANCED INSTANT BOBBER: EXTREME PENETRATION for ALL boats/ships
                 rod.events.cast:FireServer(-500, 1) -- EXTREME negative distance = penetrate ANY boat/ship
@@ -2261,8 +2498,8 @@ RunService.Heartbeat:Connect(function()
                 rod.events.cast:FireServer(-250, 1) -- Strong negative distance = penetrate boats and obstacles
                 -- print("⚡ [Instant Bobber] STRONG penetration through boats!")
             else
-                -- NORMAL CAST: Full animation, far distance
-                rod.events.cast:FireServer(100, 1) -- Distance 100 = normal cast
+                -- DEFAULT: No arm movement for efficiency
+                rod.events.cast:FireServer(-25, 1) -- Default to no animation for speed
             end
         end
     end
