@@ -96,48 +96,35 @@ local function setupOptimizedSuperInstantReel()
                             end
                         end
                         
-                        -- Instant catch when bite detected (SMOOTH ANIMATION)
-                        if lureValue >= 98 or biteValue == true then
-                            -- Optimized single call instead of spam
-                            ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                        -- ULTRA-INSTANT catch when fish activity detected (ZERO ANIMATION)
+                        if lureValue >= 95 or biteValue == true then -- Lower threshold for faster response
+                            -- IMMEDIATE completion before any animation can start
+                            for i = 1, 5 do -- Multiple rapid fires
+                                ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                            end
                             
-                            -- Smooth GUI handling
+                            -- INSTANT GUI destruction
                             local reelGui = lp.PlayerGui:FindFirstChild("reel")
                             if reelGui then
                                 reelGui:Destroy()
                             end
                             
-                            -- ANIMATION HANDLING DURING CATCH: Disable or speed up based on settings
-                            pcall(function()
-                                local character = lp.Character
-                                if character and character:FindFirstChild("Humanoid") then
-                                    local humanoid = character.Humanoid
-                                    
-                                    if flags['superinstantnoanimation'] then
-                                        -- NO ANIMATION MODE: Stop all fishing animations instantly
-                                        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                                            if track.Name:lower():find("fish") or track.Name:lower():find("reel") or 
-                                               track.Name:lower():find("catch") or track.Name:lower():find("lift") or
-                                               track.Name:lower():find("cast") or track.Name:lower():find("rod") then
-                                                track:Stop() -- Instantly stop all fishing animations
-                                            end
-                                        end
-                                    else
-                                        -- FAST ANIMATION MODE: Boost speed of all active animations during fish catch
-                                        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                                            track:AdjustSpeed(5) -- 5x speed boost during catch
-                                        end
-                                        
-                                        -- Reset animation speed after short delay
-                                        task.wait(0.1)
-                                        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                                            track:AdjustSpeed(1) -- Back to normal speed
-                                        end
+                            -- FORCE STOP any animations that might have started
+                            local character = lp.Character
+                            if character and character:FindFirstChild("Humanoid") then
+                                local humanoid = character.Humanoid
+                                for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                    local animName = track.Name:lower()
+                                    if animName:find("fish") or animName:find("reel") or animName:find("cast") or
+                                       animName:find("rod") or animName:find("catch") or animName:find("lift") or
+                                       animName:find("pull") or animName:find("bobber") then
+                                        track:Stop()
+                                        track:AdjustSpeed(0)
                                     end
                                 end
-                            end)
+                            end
                             
-                            -- print("⚡ [FAST LIFTING] Lure:" .. lureValue .. "% - INSTANT CATCH with FAST animation!")
+                            print("⚡ [ULTRA-INSTANT] Lure:" .. lureValue .. "% - ZERO ANIMATION COMPLETION!")
                         end
                     end
                 end)
@@ -164,20 +151,27 @@ local function setupOptimizedSuperInstantReel()
         -- CONTINUOUS ANIMATION DISABLING SYSTEM (for no animation mode)
         task.spawn(function()
             while superInstantReelActive do
-                task.wait(0.1) -- Check every 100ms
+                task.wait(0.05) -- Check every 50ms for more aggressive blocking
                 if flags['superinstantreel'] and flags['superinstantnoanimation'] then
                     pcall(function()
                         local character = lp.Character
                         if character and character:FindFirstChild("Humanoid") then
                             local humanoid = character.Humanoid
                             
-                            -- Continuously stop all fishing-related animations
+                            -- AGGRESSIVELY stop all fishing-related animations
                             for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                                if track.Name:lower():find("fish") or track.Name:lower():find("reel") or 
-                                   track.Name:lower():find("catch") or track.Name:lower():find("lift") or
-                                   track.Name:lower():find("cast") or track.Name:lower():find("rod") or
-                                   track.Name:lower():find("pull") or track.Name:lower():find("bobber") then
+                                local animName = track.Name:lower()
+                                local animId = tostring(track.Animation.AnimationId):lower()
+                                
+                                -- Expanded animation detection patterns
+                                if animName:find("fish") or animName:find("reel") or animName:find("cast") or 
+                                   animName:find("rod") or animName:find("catch") or animName:find("lift") or
+                                   animName:find("pull") or animName:find("bobber") or animName:find("yank") or
+                                   animId:find("fish") or animId:find("reel") or animId:find("cast") or
+                                   animId:find("rod") or animId:find("catch") or animId:find("lift") or
+                                   animId:find("pull") or animId:find("bobber") or animId:find("yank") then
                                     track:Stop() -- Aggressively stop all fishing animations
+                                    track:AdjustSpeed(0) -- Set speed to 0 as backup
                                 end
                             end
                         end
@@ -2229,11 +2223,14 @@ ReelSection:NewToggle("Super Instant Reel", "⚡ ZERO ANIMATION + FAST FISH LIFT
     if state then
         flags['autoreel'] = false -- Disable normal auto reel if super instant enabled
         flags['alwayscatch'] = false -- Disable always catch to prevent conflicts
-        -- print("🚀 [Super Instant Reel] ACTIVATED - Maximum Speed!")
-        -- print("⚡ [Fast Fish Lifting] Character animations 3x-5x faster!")
-        -- print("🎯 [Zero Animation] Instant catch with NO minigame!")
+        flags['superinstantnoanimation'] = true -- AUTOMATICALLY enable no animation mode
+        print("🚀 [Super Instant Reel] ACTIVATED - Maximum Speed!")
+        print("⚡ [Auto No-Animation] Animations automatically disabled for maximum speed!")
+        print("🎯 [Zero Animation] Instant catch with NO minigame!")
     else
-        -- print("⏸️ [Super Instant Reel] Deactivated")
+        flags['superinstantnoanimation'] = false -- Disable no animation when super instant reel is off
+        print("⏸️ [Super Instant Reel] Deactivated")
+        print("🎬 [Animations] Normal animations restored")
     end
 end)
 
@@ -3465,13 +3462,19 @@ pcall(function()
             -- Hook the Play method to check for no animation mode
             local originalPlay = animationTrack.Play
             animationTrack.Play = function(track, ...)
-                -- Block fishing animations when no animation mode is active
-                if flags['superinstantreel'] and flags['superinstantnoanimation'] then
+                -- Block fishing animations when Super Instant Reel is active (automatic)
+                if flags['superinstantreel'] then -- Always block when super instant reel is on
                     local animationId = tostring(animation.AnimationId):lower()
+                    local animationName = tostring(animation.Name):lower()
+                    
+                    -- Expanded blocking patterns
                     if animationId:find("fish") or animationId:find("reel") or animationId:find("cast") or 
                        animationId:find("rod") or animationId:find("catch") or animationId:find("lift") or
-                       animationId:find("pull") or animationId:find("bobber") then
-                        -- print("🚫 [ANIMATION BLOCKED] " .. animation.Name .. " prevented from playing!")
+                       animationId:find("pull") or animationId:find("bobber") or animationId:find("yank") or
+                       animationId:find("hook") or animationId:find("swing") or animationId:find("wave") or
+                       animationName:find("fish") or animationName:find("reel") or animationName:find("cast") or
+                       animationName:find("rod") or animationName:find("catch") or animationName:find("lift") then
+                        print("🚫 [ANIMATION BLOCKED] " .. (animation.Name or "Unknown") .. " prevented from playing!")
                         return -- Don't play the animation
                     end
                 end
@@ -3518,18 +3521,73 @@ lp.CharacterAdded:Connect(function(character)
     end)
 end)
 
+-- ROD/TOOL ANIMATION BLOCKING SYSTEM
+task.spawn(function()
+    while true do
+        task.wait(0.05) -- Check every 50ms
+        if flags['superinstantreel'] then
+            pcall(function()
+                local character = lp.Character
+                if character then
+                    -- Check for fishing rod tool
+                    local tool = character:FindFirstChildOfClass("Tool")
+                    if tool and tool.Name:lower():find("rod") then
+                        -- Hook tool animations
+                        for _, obj in pairs(tool:GetDescendants()) do
+                            if obj:IsA("Animation") then
+                                local animId = tostring(obj.AnimationId):lower()
+                                if animId:find("fish") or animId:find("reel") or animId:find("cast") or
+                                   animId:find("rod") or animId:find("catch") or animId:find("lift") then
+                                    -- Disable animation by changing its ID
+                                    obj.AnimationId = ""
+                                    print("🚫 [TOOL ANIMATION BLOCKED] Rod animation disabled!")
+                                end
+                            end
+                        end
+                        
+                        -- Stop any currently playing tool animations
+                        if tool:FindFirstChild("Humanoid") then
+                            for _, track in pairs(tool.Humanoid:GetPlayingAnimationTracks()) do
+                                track:Stop()
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
 -- FINAL SAFETY NET - Continuous monitoring
 task.spawn(function()
     while true do
         task.wait(0.001) -- Ultra-fast monitoring every 1ms
         if flags['superinstantreel'] then
             pcall(function()
-                -- Check for any reel GUI that might have slipped through
+                -- INSTANT REEL GUI DESTRUCTION AND COMPLETION
                 for _, child in pairs(lp.PlayerGui:GetChildren()) do
                     if child.Name == "reel" or (child:IsA("ScreenGui") and child:FindFirstChild("reel")) then
                         child:Destroy()
-                        ReplicatedStorage.events.reelfinished:FireServer(100, true)
-                        -- print("🗑️ [FINAL SAFETY] Eliminated reel GUI!")
+                        -- Triple fire for guaranteed completion
+                        for i = 1, 3 do
+                            ReplicatedStorage.events.reelfinished:FireServer(100, true)
+                        end
+                        print("🗑️ [FINAL SAFETY] Reel GUI eliminated - INSTANT COMPLETION!")
+                    end
+                end
+                
+                -- AGGRESSIVE ANIMATION STOPPING
+                local character = lp.Character
+                if character and character:FindFirstChild("Humanoid") then
+                    local humanoid = character.Humanoid
+                    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                        local animName = track.Name:lower()
+                        if animName:find("fish") or animName:find("reel") or animName:find("cast") or
+                           animName:find("rod") or animName:find("catch") or animName:find("lift") or
+                           animName:find("pull") or animName:find("bobber") or animName:find("yank") then
+                            track:Stop()
+                            track:AdjustSpeed(0) -- Force stop
+                        end
                     end
                 end
             end)
