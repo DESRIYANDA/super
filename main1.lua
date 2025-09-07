@@ -34,6 +34,7 @@ local tooltipmessage
 -- Default delay values
 flags['autocastdelay'] = 0.5
 flags['autoreeldelay'] = 0.5
+flags['noanimationautocast'] = false -- NEW: No animation auto cast
 
 -- Super Instant Reel Variables
 flags['superinstantreel'] = false
@@ -1725,6 +1726,18 @@ CastSection:NewToggle("Auto Cast", "Automatically cast fishing rod", function(st
     flags['autocast'] = state
 end)
 
+-- NEW: No Animation Auto Cast Toggle
+CastSection:NewToggle("No Animation Auto Cast", "🚫 Auto cast without throwing animation (instant)", function(state)
+    flags['noanimationautocast'] = state
+    if state then
+        -- print("🚫 [No Animation Auto Cast] Activated - No throwing animation!")
+        -- print("⚡ [No Animation Auto Cast] Instant cast without movement!")
+        -- print("🎯 [No Animation Auto Cast] Bobber appears instantly in water!")
+    else
+        -- print("🎣 [No Animation Auto Cast] Deactivated - Normal casting animation")
+    end
+end)
+
 -- Instant Bobber Toggle
 CastSection:NewToggle("Instant Bobber", "⚡ IMPROVED penetration through boats & obstacles", function(state)
     flags['instantbobber'] = state
@@ -2186,7 +2199,7 @@ RunService.Heartbeat:Connect(function()
             end
         end)
     end
-    -- OPTIMIZED AUTOCAST (SMOOTH WITH ALL FEATURES)
+    -- ENHANCED AUTOCAST (SUPPORTS NO ANIMATION MODE)
     if flags['autocast'] then
         local rod = FindRod()
         local currentDelay = flags['autocastdelay'] or 0.5
@@ -2199,8 +2212,12 @@ RunService.Heartbeat:Connect(function()
         if rod ~= nil and rod['values']['lure'].Value <= .001 then
             task.wait(currentDelay)
             
-            -- Check instant bobber setting for casting behavior
-            if flags['enhancedinstantbobber'] then
+            -- Check casting mode priority: No Animation > Enhanced Instant > Instant > Normal
+            if flags['noanimationautocast'] then
+                -- NO ANIMATION AUTO CAST: Use minimal negative for no animation only
+                rod.events.cast:FireServer(-25, 1) -- Small negative = no animation, instant bobber
+                -- print("🚫 [No Animation Auto Cast] Instant cast without animation!")
+            elseif flags['enhancedinstantbobber'] then
                 -- ENHANCED INSTANT BOBBER: ULTRA PENETRATION for boats/ships
                 rod.events.cast:FireServer(-150, 1) -- Ultra negative distance = penetrate THICK objects like boats
                 -- print("🌊 [Enhanced Instant Bobber] ULTRA penetration through boats/ships!")
@@ -2458,6 +2475,12 @@ if CheckFunc(hookmetamethod) then
             return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'cast' and flags['perfectcast'] then
             args[1] = 100
+            return old(self, unpack(args))
+        elseif method == 'FireServer' and self.Name == 'cast' and flags['noanimationautocast'] then
+            -- NO ANIMATION MANUAL CAST: Override manual casting untuk no animation (HIGHEST PRIORITY)
+            args[1] = -25   -- Small negative distance = no animation, instant bobber
+            args[2] = 1     -- Keep force parameter
+            -- print("🚫 [No Animation Cast Hook] Manual cast without animation!")
             return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'cast' and flags['enhancedinstantbobber'] then
             -- ENHANCED INSTANT BOBBER HOOK: ULTRA penetration for boats/ships
