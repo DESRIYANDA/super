@@ -32,8 +32,8 @@ local deathcon
 local tooltipmessage
 
 -- Default delay values
-flags['autocastdelay'] = 0.5
-flags['autoreeldelay'] = 0.5
+flags['autocastdelay'] = 0.1
+flags['autoreeldelay'] = 0.1
 flags['noanimationautocast'] = false -- NEW: No animation auto cast
 flags['autocastarmmovement'] = false -- NEW: Arm movement in auto cast
 
@@ -1325,13 +1325,14 @@ if not success or not Window then
 end
 
 -- Create Tabs
-local AutoTab, ModTab, TeleTab, VisualTab, ShopTab, EventTab
+local AutoTab, ModTab, TeleTab, TeleTabV2, VisualTab, ShopTab, EventTab
 
 if Window and Window.NewTab then
     pcall(function()
         AutoTab = Window:NewTab("🎣 Automation")
         ModTab = Window:NewTab("⚙️ Modifications") 
         TeleTab = Window:NewTab("🌍 Teleports")
+        TeleTabV2 = Window:NewTab("🚀 Teleport V2")
         VisualTab = Window:NewTab("👁️ Visuals")
         EventTab = Window:NewTab("⭐ Zona Event")
         ZoneCastTab = Window:NewTab("🗺️ Zone Cast")
@@ -1435,6 +1436,7 @@ else
     AutoTab = dummyTab
     ModTab = dummyTab
     TeleTab = dummyTab
+    TeleTabV2 = dummyTab
     VisualTab = dummyTab
     EventTab = dummyTab
     -- print("⚠️ Using fallback tabs - script functionality preserved")
@@ -2042,8 +2044,113 @@ pcall(function()
 end)
 
 local ShakeSection = AutoTab:NewSection("Auto Shake Settings")
-ShakeSection:NewToggle("Auto Shake", "Automatically shake when fish bites", function(state)
+ShakeSection:NewToggle("Auto Shake V1", "Standard autoshake with conflict management", function(state)
     flags['autoshake'] = state
+    if state then
+        -- Disable V2 to prevent conflicts
+        autoShakeV2Active = false
+        if autoShakeV2Connection then
+            autoShakeV2Connection:Disconnect()
+            autoShakeV2Connection = nil
+        end
+        -- print("🛡️ [AutoShake V1] Advanced system activated - V2 disabled")
+    end
+end)
+
+-- AutoShake V2 - Fast & Lightweight (inspired by main4.lua)
+local autoShakeV2Active = false
+local autoShakeV2Connection = nil
+local autoShakeV2Delay = 0
+
+-- AutoShake V2 Function (meniru main4.lua)
+local function handleButtonClickV2(button)
+    if not button.Visible then return end
+    
+    GuiService.SelectedObject = button
+    task.wait(autoShakeV2Delay)
+    
+    game:GetService('VirtualInputManager'):SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+    game:GetService('VirtualInputManager'):SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+end
+
+ShakeSection:NewToggle("Auto Shake V2", "⚡ Ultra-fast shake (main4.lua style) - LIGHTWEIGHT", function(state)
+    autoShakeV2Active = state
+    
+    if state then
+        -- Disable V1 to prevent conflicts
+        flags['autoshake'] = false
+        
+        -- Setup V2 system (main4.lua style)
+        autoShakeV2Connection = lp.PlayerGui.ChildAdded:Connect(function(GUI)
+            if GUI:IsA("ScreenGui") and GUI.Name == "shakeui" then
+                local safezone = GUI:WaitForChild("safezone", 5)
+                if safezone then
+                    safezone.ChildAdded:Connect(function(child)
+                        if child:IsA("ImageButton") and child.Name == "button" then
+                            task.spawn(function()
+                                if autoShakeV2Active then
+                                    enhancedHandleButtonClickV2(child)
+                                end
+                            end)
+                        end
+                    end)
+                end
+            end
+        end)
+        
+        -- print("⚡ [AutoShake V2] ULTRA-FAST shake system activated!")
+        -- print("🚀 [Performance] Lightweight main4.lua-style detection!")
+    else
+        -- Cleanup V2 connections
+        if autoShakeV2Connection then
+            autoShakeV2Connection:Disconnect()
+            autoShakeV2Connection = nil
+        end
+        -- print("⏸️ [AutoShake V2] Deactivated")
+    end
+end)
+
+-- AutoShake V2 Delay Slider
+local shakeV2Slider = ShakeSection:NewSlider("AutoShake V2 Delay", "Delay for V2 shake (0 = instant)", 0, 1, function(value)
+    autoShakeV2Delay = value
+    -- print("[AutoShake V2] Delay set to: " .. value .. " seconds")
+end)
+
+-- Info section for AutoShake comparison
+ShakeSection:NewLabel("⚖️ AutoShake Comparison:")
+ShakeSection:NewLabel("V1: Advanced + Conflict-safe + Integrated")  
+ShakeSection:NewLabel("V2: Ultra-fast + Lightweight + Direct")
+ShakeSection:NewLabel("💡 Use V2 for maximum shake speed!")
+
+-- AutoShake V2 Statistics (optional debug info)
+local shakeV2Stats = {
+    activations = 0,
+    lastActivation = 0
+}
+
+-- Enhanced AutoShake V2 with statistics
+local function enhancedHandleButtonClickV2(button)
+    if not button.Visible then return end
+    
+    GuiService.SelectedObject = button
+    task.wait(autoShakeV2Delay)
+    
+    game:GetService('VirtualInputManager'):SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+    game:GetService('VirtualInputManager'):SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+    
+    -- Update statistics
+    shakeV2Stats.activations = shakeV2Stats.activations + 1
+    shakeV2Stats.lastActivation = tick()
+    
+    -- Optional debug output
+    -- print("⚡ [AutoShake V2] #" .. shakeV2Stats.activations .. " - Ultra-fast execution!")
+end
+
+-- Optional: Add reset button for statistics
+ShakeSection:NewButton("🔄 Reset V2 Stats", "Reset AutoShake V2 statistics", function()
+    shakeV2Stats.activations = 0
+    shakeV2Stats.lastActivation = 0
+    -- print("📊 [AutoShake V2] Statistics reset!")
 end)
 
 local ReelSection = AutoTab:NewSection("Auto Reel Settings") 
@@ -2448,9 +2555,9 @@ RunService.Heartbeat:Connect(function()
     else
         characterposition = nil
     end
-    -- OPTIMIZED AUTOSHAKE (CONFLICT-FREE WITH INSTANT REEL)
-    if flags['autoshake'] and not flags['superinstantreel'] then
-        -- Only run autoshake if super instant reel is disabled to prevent conflicts
+    -- OPTIMIZED AUTOSHAKE V1 (CONFLICT-FREE WITH INSTANT REEL AND V2)
+    if flags['autoshake'] and not autoShakeV2Active and not flags['superinstantreel'] then
+        -- Only run autoshake V1 if V2 is disabled and super instant reel is disabled
         if FindChild(lp.PlayerGui, 'shakeui') and FindChild(lp.PlayerGui['shakeui'], 'safezone') and FindChild(lp.PlayerGui['shakeui']['safezone'], 'button') then
             GuiService.SelectedObject = lp.PlayerGui['shakeui']['safezone']['button']
             if GuiService.SelectedObject == lp.PlayerGui['shakeui']['safezone']['button'] then
@@ -2467,6 +2574,8 @@ RunService.Heartbeat:Connect(function()
             end
         end)
     end
+    
+    -- NOTE: AutoShake V2 runs independently via ChildAdded connection (main4.lua style)
     -- ENHANCED AUTOCAST (SUPPORTS ARM MOVEMENT TOGGLE)
     if flags['autocast'] then
         local rod = FindRod()
@@ -3274,4 +3383,276 @@ end)
 
 -- print("✅ [ULTIMATE SYSTEM] All hook systems activated!")
 -- print("🎯 [READY] ULTIMATE Super Instant Reel system fully operational!")
+
+--[[
+=================================================================
+🚀 TELEPORT V2 - DYNAMIC LISTS SYSTEM
+=================================================================
+Dynamic teleport system that automatically scans and updates
+teleport locations from the game world in real-time.
+
+Features:
+- Auto-populating fishing zones
+- Dynamic NPC locations  
+- Real-time teleport spot detection
+- Smart categorization by type
+- Future-proof auto-updates
+
+Inspired by main5.lua (Rinns Hub) dynamic system
+=================================================================
+--]]
+
+-- Dynamic Lists Variables
+local dynamicFishingZones = {}
+local dynamicTeleportSpots = {}
+local dynamicNPCLocations = {}
+local dynamicActiveItems = {}
+
+-- References to game world folders
+local FishingZonesFolder = workspace.zones and workspace.zones.fishing
+local TpSpotsFolder = workspace.world and workspace.world.spawns
+local NpcFolder = workspace.world and workspace.world.npcs
+local ActiveFolder = workspace.active
+
+-- Function to scan and update fishing zones
+local function updateDynamicFishingZones()
+    pcall(function()
+        dynamicFishingZones = {}
+        if FishingZonesFolder then
+            for _, zone in pairs(FishingZonesFolder:GetChildren()) do
+                if not table.find(dynamicFishingZones, zone.Name) then
+                    table.insert(dynamicFishingZones, zone.Name)
+                end
+            end
+        end
+        -- Sort alphabetically for better organization
+        table.sort(dynamicFishingZones)
+    end)
+end
+
+-- Function to scan and update teleport spots
+local function updateDynamicTeleportSpots()
+    pcall(function()
+        dynamicTeleportSpots = {}
+        if TpSpotsFolder then
+            for _, spot in pairs(TpSpotsFolder:GetChildren()) do
+                if not table.find(dynamicTeleportSpots, spot.Name) and spot.Name ~= "mirror Area" then
+                    table.insert(dynamicTeleportSpots, spot.Name)
+                end
+            end
+        end
+        -- Sort alphabetically for better organization
+        table.sort(dynamicTeleportSpots)
+    end)
+end
+
+-- Function to scan and update NPC locations
+local function updateDynamicNPCLocations()
+    pcall(function()
+        dynamicNPCLocations = {}
+        if NpcFolder then
+            for _, npc in pairs(NpcFolder:GetChildren()) do
+                if not table.find(dynamicNPCLocations, npc.Name) and npc.Name ~= "mirror Area" then
+                    table.insert(dynamicNPCLocations, npc.Name)
+                end
+            end
+        end
+        -- Sort alphabetically for better organization
+        table.sort(dynamicNPCLocations)
+    end)
+end
+
+-- Function to scan active items (event items, special objects)
+local function updateDynamicActiveItems()
+    pcall(function()
+        dynamicActiveItems = {}
+        if ActiveFolder then
+            for _, item in pairs(ActiveFolder:GetChildren()) do
+                if item:FindFirstChild("PickupPrompt") and not table.find(dynamicActiveItems, item.Name) then
+                    table.insert(dynamicActiveItems, item.Name)
+                end
+            end
+        end
+        -- Sort alphabetically for better organization
+        table.sort(dynamicActiveItems)
+    end)
+end
+
+-- Initial scan of all dynamic locations
+updateDynamicFishingZones()
+updateDynamicTeleportSpots()
+updateDynamicNPCLocations()
+updateDynamicActiveItems()
+
+-- Set up auto-updating listeners
+if FishingZonesFolder then
+    FishingZonesFolder.ChildAdded:Connect(function(child)
+        if not table.find(dynamicFishingZones, child.Name) then
+            table.insert(dynamicFishingZones, child.Name)
+            table.sort(dynamicFishingZones)
+            -- print("🎣 [Dynamic V2] New fishing zone added: " .. child.Name)
+        end
+    end)
+end
+
+if TpSpotsFolder then
+    TpSpotsFolder.ChildAdded:Connect(function(child)
+        if not table.find(dynamicTeleportSpots, child.Name) and child.Name ~= "mirror Area" then
+            table.insert(dynamicTeleportSpots, child.Name)
+            table.sort(dynamicTeleportSpots)
+            -- print("🌍 [Dynamic V2] New teleport spot added: " .. child.Name)
+        end
+    end)
+end
+
+if NpcFolder then
+    NpcFolder.ChildAdded:Connect(function(child)
+        if not table.find(dynamicNPCLocations, child.Name) and child.Name ~= "mirror Area" then
+            table.insert(dynamicNPCLocations, child.Name)
+            table.sort(dynamicNPCLocations)
+            -- print("👤 [Dynamic V2] New NPC added: " .. child.Name)
+        end
+    end)
+end
+
+if ActiveFolder then
+    ActiveFolder.ChildAdded:Connect(function(child)
+        if child:FindFirstChild("PickupPrompt") and not table.find(dynamicActiveItems, child.Name) then
+            table.insert(dynamicActiveItems, child.Name)
+            table.sort(dynamicActiveItems)
+            -- print("⭐ [Dynamic V2] New active item added: " .. child.Name)
+        end
+    end)
+end
+
+-- Teleport V2 Tab Implementation
+if TeleTabV2 then
+    pcall(function()
+        -- Dynamic Fishing Zones Section
+        local DynamicFishingSection = TeleTabV2:NewSection("🎣 Dynamic Fishing Zones")
+        
+        local dynamicFishingDropdown = DynamicFishingSection:NewDropdown("Dynamic Fishing Zones", "Teleport to automatically detected fishing zones", dynamicFishingZones, function(selectedZone)
+            pcall(function()
+                if selectedZone and FishingZonesFolder then
+                    local zone = FishingZonesFolder:FindFirstChild(selectedZone)
+                    if zone and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                        lp.Character.HumanoidRootPart.CFrame = CFrame.new(zone.Position.X, zone.Position.Y + 5, zone.Position.Z)
+                        -- print("🎣 [Dynamic V2] Teleported to fishing zone: " .. selectedZone)
+                    end
+                end
+            end)
+        end)
+        
+        -- Dynamic Teleport Spots Section
+        local DynamicSpotsSection = TeleTabV2:NewSection("🌍 Dynamic Teleport Spots")
+        
+        local dynamicSpotsDropdown = DynamicSpotsSection:NewDropdown("Dynamic Teleport Spots", "Teleport to automatically detected locations", dynamicTeleportSpots, function(selectedSpot)
+            pcall(function()
+                if selectedSpot and TpSpotsFolder then
+                    local spot = TpSpotsFolder:FindFirstChild(selectedSpot)
+                    if spot and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                        lp.Character.HumanoidRootPart.CFrame = spot.CFrame + Vector3.new(0, 5, 0)
+                        -- print("🌍 [Dynamic V2] Teleported to spot: " .. selectedSpot)
+                    end
+                end
+            end)
+        end)
+        
+        -- Dynamic NPC Locations Section
+        local DynamicNPCSection = TeleTabV2:NewSection("👤 Dynamic NPC Locations")
+        
+        local dynamicNPCDropdown = DynamicNPCSection:NewDropdown("Dynamic NPC Locations", "Teleport to automatically detected NPCs", dynamicNPCLocations, function(selectedNPC)
+            pcall(function()
+                if selectedNPC and NpcFolder then
+                    local npc = NpcFolder:FindFirstChild(selectedNPC)
+                    if npc and npc:FindFirstChild("HumanoidRootPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                        lp.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame + Vector3.new(0, 1, 0)
+                        -- print("👤 [Dynamic V2] Teleported to NPC: " .. selectedNPC)
+                    end
+                end
+            end)
+        end)
+        
+        -- Dynamic Active Items Section
+        local DynamicActiveSection = TeleTabV2:NewSection("⭐ Dynamic Active Items")
+        
+        local dynamicActiveDropdown = DynamicActiveSection:NewDropdown("Dynamic Active Items", "Teleport to active event items & special objects", dynamicActiveItems, function(selectedItem)
+            pcall(function()
+                if selectedItem and ActiveFolder then
+                    local item = ActiveFolder:FindFirstChild(selectedItem)
+                    if item and item:FindFirstChildOfClass("MeshPart") and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                        lp.Character.HumanoidRootPart.CFrame = item:FindFirstChildOfClass("MeshPart").CFrame + Vector3.new(3, 2, 0)
+                        -- print("⭐ [Dynamic V2] Teleported to active item: " .. selectedItem)
+                    end
+                end
+            end)
+        end)
+        
+        -- Refresh Buttons Section
+        local RefreshSection = TeleTabV2:NewSection("🔄 Manual Refresh")
+        
+        RefreshSection:NewButton("🔄 Refresh All Lists", "Manually refresh all dynamic lists", function()
+            updateDynamicFishingZones()
+            updateDynamicTeleportSpots()
+            updateDynamicNPCLocations()
+            updateDynamicActiveItems()
+            
+            -- Update dropdowns with new values
+            pcall(function()
+                dynamicFishingDropdown:Refresh(dynamicFishingZones, true)
+                dynamicSpotsDropdown:Refresh(dynamicTeleportSpots, true)
+                dynamicNPCDropdown:Refresh(dynamicNPCLocations, true)
+                dynamicActiveDropdown:Refresh(dynamicActiveItems, true)
+            end)
+            
+            -- print("🔄 [Dynamic V2] All lists refreshed successfully!")
+            -- print("🎣 Fishing Zones: " .. #dynamicFishingZones .. " found")
+            -- print("🌍 Teleport Spots: " .. #dynamicTeleportSpots .. " found")
+            -- print("👤 NPCs: " .. #dynamicNPCLocations .. " found")  
+            -- print("⭐ Active Items: " .. #dynamicActiveItems .. " found")
+        end)
+        
+        -- Auto-refresh toggle
+        local autoRefreshEnabled = false
+        RefreshSection:NewToggle("🔄 Auto-Refresh (30s)", "Automatically refresh lists every 30 seconds", function(state)
+            autoRefreshEnabled = state
+            if state then
+                -- print("🔄 [Dynamic V2] Auto-refresh enabled (30s intervals)")
+                task.spawn(function()
+                    while autoRefreshEnabled do
+                        task.wait(30)
+                        if autoRefreshEnabled then
+                            updateDynamicFishingZones()
+                            updateDynamicTeleportSpots()
+                            updateDynamicNPCLocations()
+                            updateDynamicActiveItems()
+                            
+                            pcall(function()
+                                dynamicFishingDropdown:Refresh(dynamicFishingZones, true)
+                                dynamicSpotsDropdown:Refresh(dynamicTeleportSpots, true)
+                                dynamicNPCDropdown:Refresh(dynamicNPCLocations, true)
+                                dynamicActiveDropdown:Refresh(dynamicActiveItems, true)
+                            end)
+                            
+                            -- print("🔄 [Dynamic V2] Auto-refresh completed")
+                        end
+                    end
+                end)
+            else
+                -- print("🔄 [Dynamic V2] Auto-refresh disabled")
+            end
+        end)
+        
+        -- Info Section
+        local InfoSection = TeleTabV2:NewSection("ℹ️ System Information")
+        InfoSection:NewLabel("🚀 Teleport V2 - Dynamic Lists System")
+        InfoSection:NewLabel("📊 Real-time scanning & auto-updating")
+        InfoSection:NewLabel("🎯 Future-proof teleportation")
+        InfoSection:NewLabel("⚡ Inspired by Rinns Hub technology")
+        
+        -- print("🚀 [Teleport V2] Dynamic teleport system initialized!")
+        -- print("📊 [Stats] Fishing Zones: " .. #dynamicFishingZones .. " | Spots: " .. #dynamicTeleportSpots .. " | NPCs: " .. #dynamicNPCLocations .. " | Items: " .. #dynamicActiveItems)
+        
+    end)
+end
 -- print("🚀 [SPEED] Fish will be caught INSTANTLY with ZERO animation when enabled!")
