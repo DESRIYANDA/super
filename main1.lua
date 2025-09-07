@@ -49,7 +49,7 @@ flags['blockrodwave'] = false
 flags['blockshakeeffects'] = false
 flags['blockexaltedanim'] = false
 
--- OPTIMIZED Super Instant Reel System (SMOOTH & EFFICIENT)
+-- ENHANCED Super Instant Reel System (SMOOTH & FAST FISH LIFTING)
 local function setupOptimizedSuperInstantReel()
     if not superInstantReelActive then
         superInstantReelActive = true
@@ -63,6 +63,20 @@ local function setupOptimizedSuperInstantReel()
                         local lureValue = rod.values.lure and rod.values.lure.Value or 0
                         local biteValue = rod.values.bite and rod.values.bite.Value or false
                         
+                        -- FAST FISH LIFTING: Speed up character animations when super instant reel is active
+                        local character = lp.Character
+                        if character and character:FindFirstChild("Humanoid") then
+                            local humanoid = character.Humanoid
+                            
+                            -- Speed up all character animations for faster fish lifting
+                            for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                if track.Name:lower():find("fish") or track.Name:lower():find("reel") or 
+                                   track.Name:lower():find("catch") or track.Name:lower():find("lift") then
+                                    track:AdjustSpeed(3) -- 3x faster fish lifting animation
+                                end
+                            end
+                        end
+                        
                         -- Instant catch when bite detected (SMOOTH ANIMATION)
                         if lureValue >= 98 or biteValue == true then
                             -- Optimized single call instead of spam
@@ -74,7 +88,26 @@ local function setupOptimizedSuperInstantReel()
                                 reelGui:Destroy()
                             end
                             
-                            -- print("⚡ [SMOOTH INSTANT] Lure:" .. lureValue .. "% - INSTANT CATCH!")
+                            -- FAST FISH LIFTING: Instantly speed up any fish-related animations
+                            pcall(function()
+                                local character = lp.Character
+                                if character and character:FindFirstChild("Humanoid") then
+                                    local humanoid = character.Humanoid
+                                    
+                                    -- Boost speed of all active animations during fish catch
+                                    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                        track:AdjustSpeed(5) -- 5x speed boost during catch
+                                    end
+                                    
+                                    -- Reset animation speed after short delay
+                                    task.wait(0.1)
+                                    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                        track:AdjustSpeed(1) -- Back to normal speed
+                                    end
+                                end
+                            end)
+                            
+                            -- print("⚡ [FAST LIFTING] Lure:" .. lureValue .. "% - INSTANT CATCH with FAST animation!")
                         end
                     end
                 end)
@@ -1789,12 +1822,14 @@ ReelSection:NewToggle("Auto Reel", "Automatically reel in fish", function(state)
 end)
 
 -- Super Instant Reel Toggle
-ReelSection:NewToggle("Super Instant Reel", "⚡ ZERO ANIMATION - Instantly catch fish when indicator appears (NO MINIGAME)", function(state)
+ReelSection:NewToggle("Super Instant Reel", "⚡ ZERO ANIMATION + FAST FISH LIFTING - Instant catch with speed boost", function(state)
     flags['superinstantreel'] = state
     if state then
         flags['autoreel'] = false -- Disable normal auto reel if super instant enabled
         flags['alwayscatch'] = false -- Disable always catch to prevent conflicts
         -- print("🚀 [Super Instant Reel] ACTIVATED - Maximum Speed!")
+        -- print("⚡ [Fast Fish Lifting] Character animations 3x-5x faster!")
+        -- print("🎯 [Zero Animation] Instant catch with NO minigame!")
     else
         -- print("⏸️ [Super Instant Reel] Deactivated")
     end
@@ -2240,7 +2275,7 @@ RunService.Heartbeat:Connect(function()
         end
     end
     
-    -- 🚀 OPTIMIZED SUPER INSTANT REEL - SMOOTH & EFFICIENT!
+    -- 🚀 ENHANCED SUPER INSTANT REEL - SMOOTH & FAST FISH LIFTING!
     if flags['superinstantreel'] then
         local rod = FindRod()
         if rod ~= nil then
@@ -2259,7 +2294,28 @@ RunService.Heartbeat:Connect(function()
                         reelGui:Destroy()
                     end
                     
-                    -- print("⚡ [SMOOTH INSTANT] Lure:" .. lureValue .. "% - NO LAG CATCH!")
+                    -- FAST FISH LIFTING: Speed boost for character animations
+                    pcall(function()
+                        local character = lp.Character
+                        if character and character:FindFirstChild("Humanoid") then
+                            local humanoid = character.Humanoid
+                            
+                            -- 5x speed boost for all animations during catch
+                            for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                track:AdjustSpeed(5)
+                            end
+                            
+                            -- Reset to normal speed after brief period
+                            task.spawn(function()
+                                task.wait(0.2)
+                                for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                                    track:AdjustSpeed(1)
+                                end
+                            end)
+                        end
+                    end)
+                    
+                    -- print("⚡ [FAST LIFTING] Lure:" .. lureValue .. "% - INSTANT + SPEED BOOST!")
                 end)
             end
         end
