@@ -1739,22 +1739,22 @@ CastSection:NewToggle("No Animation Auto Cast", "🚫 Auto cast without throwing
 end)
 
 -- Instant Bobber Toggle
-CastSection:NewToggle("Instant Bobber", "⚡ IMPROVED penetration through boats & obstacles", function(state)
+CastSection:NewToggle("Instant Bobber", "⚡ STRONG penetration through boats & thick obstacles", function(state)
     flags['instantbobber'] = state
     if state then
-        -- print("⚡ [Instant Bobber] Activated - IMPROVED boat penetration!")
-        -- print("📍 [Instant Bobber] Can penetrate boats and obstacles")
-        -- print("🚢 [Instant Bobber] Works through ships and structures!")
+        -- print("⚡ [Instant Bobber] Activated - STRONG boat penetration!")
+        -- print("📍 [Instant Bobber] Can penetrate thick boats and obstacles")
+        -- print("🚢 [Instant Bobber] Works through most ships and structures!")
     else
         -- print("🎣 [Instant Bobber] Deactivated - Normal casting animation")
     end
 end)
 
 -- NEW: Enhanced Instant Bobber Toggle
-CastSection:NewToggle("Enhanced Instant Bobber", "🌊 ULTRA penetration through boats/ships & all objects", function(state)
+CastSection:NewToggle("Enhanced Instant Bobber", "🌊 EXTREME penetration through ANY boat/ship/obstacle", function(state)
     flags['enhancedinstantbobber'] = state
     if state then
-        -- print("🌊 [Enhanced Instant Bobber] Activated - ULTRA boat penetration!")
+        -- print("🌊 [Enhanced Instant Bobber] Activated - EXTREME boat penetration!")
         -- print("⚡ [Enhanced Instant Bobber] Bobber goes directly to water!")
         -- print("🚀 [Enhanced Instant Bobber] Uses negative distance for penetration!")
     else
@@ -2218,13 +2218,13 @@ RunService.Heartbeat:Connect(function()
                 rod.events.cast:FireServer(-25, 1) -- Small negative = no animation, instant bobber
                 -- print("🚫 [No Animation Auto Cast] Instant cast without animation!")
             elseif flags['enhancedinstantbobber'] then
-                -- ENHANCED INSTANT BOBBER: ULTRA PENETRATION for boats/ships
-                rod.events.cast:FireServer(-150, 1) -- Ultra negative distance = penetrate THICK objects like boats
-                -- print("🌊 [Enhanced Instant Bobber] ULTRA penetration through boats/ships!")
+                -- ENHANCED INSTANT BOBBER: EXTREME PENETRATION for ALL boats/ships
+                rod.events.cast:FireServer(-500, 1) -- EXTREME negative distance = penetrate ANY boat/ship
+                -- print("🌊 [Enhanced Instant Bobber] EXTREME penetration through ANY boat/ship!")
             elseif flags['instantbobber'] then
-                -- INSTANT BOBBER: IMPROVED penetration for obstacles
-                rod.events.cast:FireServer(-75, 1) -- Negative distance = penetrate boats and obstacles
-                -- print("⚡ [Instant Bobber] IMPROVED penetration through boats!")
+                -- INSTANT BOBBER: STRONG penetration for boats
+                rod.events.cast:FireServer(-250, 1) -- Strong negative distance = penetrate boats and obstacles
+                -- print("⚡ [Instant Bobber] STRONG penetration through boats!")
             else
                 -- NORMAL CAST: Full animation, far distance
                 rod.events.cast:FireServer(100, 1) -- Distance 100 = normal cast
@@ -2483,16 +2483,16 @@ if CheckFunc(hookmetamethod) then
             -- print("🚫 [No Animation Cast Hook] Manual cast without animation!")
             return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'cast' and flags['enhancedinstantbobber'] then
-            -- ENHANCED INSTANT BOBBER HOOK: ULTRA penetration for boats/ships
-            args[1] = -150  -- Ultra negative distance untuk penetrate THICK objects like boats
+            -- ENHANCED INSTANT BOBBER HOOK: EXTREME penetration for ALL boats/ships
+            args[1] = -500  -- EXTREME negative distance untuk penetrate ANY boat/ship
             args[2] = 1     -- Keep force parameter
-            -- print("🌊 [Enhanced Instant Bobber Hook] ULTRA penetration through boats/ships!")
+            -- print("🌊 [Enhanced Instant Bobber Hook] EXTREME penetration through ANY boat/ship!")
             return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'cast' and flags['instantbobber'] then
-            -- INSTANT BOBBER HOOK: IMPROVED penetration for boats
-            args[1] = -75   -- Improved negative distance untuk penetrate boats
+            -- INSTANT BOBBER HOOK: STRONG penetration for boats
+            args[1] = -250  -- Strong negative distance untuk penetrate boats
             args[2] = 1     -- Keep power at 1
-            -- print("⚡ [Instant Bobber Hook] IMPROVED penetration through boats!")
+            -- print("⚡ [Instant Bobber Hook] STRONG penetration through boats!")
             return old(self, unpack(args))
         elseif method == 'FireServer' and self.Name == 'reelfinished' and flags['alwayscatch'] then
             args[1] = 100
